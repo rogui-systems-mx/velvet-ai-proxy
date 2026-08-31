@@ -35,15 +35,31 @@ Mantén tus respuestas amables, directas y en formato de texto plano o markdown 
       });
     });
 
-    const response = await ai.models.generateContent({
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const responseStream = await ai.models.generateContentStream({
       model: 'gemini-3.6-flash',
       contents: contents,
     });
 
-    res.json({ reply: response.text });
+    for await (const chunk of responseStream) {
+      if (chunk.text) {
+        res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+      }
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
   } catch (error) {
     console.error('Error en Gemini AI:', error);
-    res.status(500).json({ error: 'Hubo un error al procesar tu solicitud.' });
+    // If headers are not sent, we can still send an error status
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Hubo un error al procesar tu solicitud.' });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: 'Hubo un error.' })}\n\n`);
+      res.end();
+    }
   }
 });
 
