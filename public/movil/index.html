@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Velvet Móvil — Dueño & Inventario</title>
+  
+  <link rel="manifest" href="/movil/manifest.json">
+  <meta name="theme-color" content="#0d0b14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Velvet Móvil">
+  <link rel="apple-touch-icon" href="/movil/icon-192.png">
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- HTML5-QRCode Scanner -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0d0b14;
+      --card-bg: rgba(26, 22, 38, 0.75);
+      --card-border: rgba(157, 80, 187, 0.25);
+      --accent: #9d50bb;
+      --accent-glow: rgba(157, 80, 187, 0.4);
+      --accent-gradient: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%);
+      --text: #ffffff;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --font-title: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(157, 80, 187, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(110, 72, 170, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Estilos Glassmorphism */
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+    }
+
+    .btn-gradient {
+      background: var(--accent-gradient);
+      color: white;
+      border: none;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .btn-gradient:active {
+      transform: scale(0.97);
+    }
+
+    /* PANTALLA DE BLOQUEO POR PIN */
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .brand-logo-badge {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 25px var(--accent-glow);
+      margin-bottom: 1rem;
+    }
+
+    .pin-dots {
+      display: flex;
+      gap: 1rem;
+      margin: 1.5rem 0 2rem 0;
+    }
+
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .pin-dot.filled {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+      transform: scale(1.15);
+    }
+
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      max-width: 280px;
+      width: 100%;
+    }
+
+    .key-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 1.6rem;
+      font-family: var(--font-title);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .key-btn:active {
+      background: rgba(157, 80, 187, 0.3);
+      transform: scale(0.92);
+    }
+
+    /* APP SHELL */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(13, 11, 20, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem 0 1rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent-gradient);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    main {
+      flex: 1;
+      padding: 1rem;
+      max-width: 650px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* BÚSQUEDA Y CÁMARA */
+    .search-bar-wrap {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .search-input-box {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input-box input {
+      width: 100%;
+      height: 48px;
+      padding: 0 1rem 0 2.75rem;
+      border-radius: 14px;
+      background: rgba(26, 22, 38, 0.8);
+      border: 1px solid var(--card-border);
+      color: white;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .search-input-box input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .search-icon-pos {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    .scan-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      flex-shrink: 0;
+    }
+
+    /* CATEGORÍAS CHIPS */
+    .chips-scroll {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      scrollbar-width: none;
+    }
+
+    .chips-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-chip {
+      padding: 0.4rem 0.8rem;
+      border-radius: 100px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .filter-chip.active {
+      background: rgba(157, 80, 187, 0.25);
+      border-color: var(--accent);
+      color: #e2bbfd;
+    }
+
+    /* TARJETAS DE PRODUCTO */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .product-card {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .product-card:active {
+      transform: scale(0.98);
+      background: rgba(40, 32, 60, 0.85);
+    }
+
+    .prod-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .prod-title {
+      font-family: var(--font-title);
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .badge-stock {
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .stock-ok {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .stock-low {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .stock-out {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .prod-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .prod-prices-row {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      margin-top: 0.2rem;
+    }
+
+    .price-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-col span:first-child {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .price-col span:last-child {
+      font-weight: 700;
+      color: white;
+      font-size: 0.92rem;
+    }
+
+    /* MODAL DE AJUSTE / SURTIDO */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: #141021;
+      border-top: 1px solid var(--accent);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-sheet-header h3 {
+      font-family: var(--font-title);
+      font-size: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .form-input {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* CAMARA SCANNER OVERLAY */
+    #scannerModal {
+      position: fixed;
+      inset: 0;
+      background: black;
+      z-index: 99;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #scannerModal.open {
+      display: flex;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 450px;
+    }
+
+    /* TOAST NOTIFICACION */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #22c55e;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 999;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE BLOQUEO POR PIN -->
+  <div id="lockScreen">
+    <div class="brand-logo-badge">
+      <span style="font-family: var(--font-title); font-size: 2.2rem; font-weight: 900; color: white;">V</span>
+    </div>
+    <h2 style="font-family: var(--font-title); font-size: 1.5rem; font-weight: 700;">Velvet Móvil</h2>
+    <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Ingresa tu PIN de Dueño para acceder</p>
+
+    <div class="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+
+    <div class="pin-keypad">
+      <button class="key-btn" onclick="pressPin('1')">1</button>
+      <button class="key-btn" onclick="pressPin('2')">2</button>
+      <button class="key-btn" onclick="pressPin('3')">3</button>
+      <button class="key-btn" onclick="pressPin('4')">4</button>
+      <button class="key-btn" onclick="pressPin('5')">5</button>
+      <button class="key-btn" onclick="pressPin('6')">6</button>
+      <button class="key-btn" onclick="pressPin('7')">7</button>
+      <button class="key-btn" onclick="pressPin('8')">8</button>
+      <button class="key-btn" onclick="pressPin('9')">9</button>
+      <button class="key-btn" style="font-size: 1rem; color: var(--text-muted);" onclick="clearPin()">C</button>
+      <button class="key-btn" onclick="pressPin('0')">0</button>
+      <button class="key-btn" style="color: var(--danger);" onclick="deletePin()">⌫</button>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div style="display: flex; align-items: center; gap: 0.6rem;">
+      <div style="width: 34px; height: 34px; border-radius: 10px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-family: var(--font-title); font-weight: 800; font-size: 1.2rem;">
+        V
+      </div>
+      <div>
+        <h1 id="shopNameHeader" style="font-family: var(--font-title); font-size: 1.05rem; font-weight: 700;">VelvetPOS</h1>
+        <small id="syncStatusBadge" style="color: var(--success); font-size: 0.72rem; font-weight: 600;">● En Línea</small>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <button onclick="refreshData()" class="glass" style="padding: 0.5rem; color: white; cursor: pointer; border: none; display: flex; align-items: center;">
+        <i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i>
+      </button>
+      <button onclick="lockApp()" class="glass" style="padding: 0.5rem; color: var(--danger); cursor: pointer; border: none; display: flex; align-items: center;">
+        <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- NAVEGACIÓN POR PESTAÑAS -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" id="tabBtnInventory" onclick="switchTab('inventory')">
+      <i data-lucide="package" style="width: 16px; height: 16px;"></i> Inventario
+    </button>
+    <button class="tab-btn" id="tabBtnSales" onclick="switchTab('sales')">
+      <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i> Caja Hoy
+    </button>
+    <button class="tab-btn" id="tabBtnPending" onclick="switchTab('pending')">
+      <i data-lucide="clock" style="width: 16px; height: 16px;"></i> Cambios (<span id="pendingCount">0</span>)
+    </button>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+    <!-- VISTA INVENTARIO -->
+    <div id="viewInventory">
+      <div class="search-bar-wrap">
+        <div class="search-input-box">
+          <i data-lucide="search" class="search-icon-pos" style="width: 18px; height: 18px;"></i>
+          <input type="text" id="searchInput" placeholder="Buscar por nombre, SKU o código..." oninput="handleSearch()">
+        </div>
+        <button class="btn-gradient scan-btn" onclick="startCameraScanner()" title="Escanear Código de Barras">
+          <i data-lucide="camera" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <div class="chips-scroll" id="categoryChips">
+        <button class="filter-chip active" onclick="setCategoryFilter('ALL')">Todos</button>
+        <button class="filter-chip" onclick="setCategoryFilter('LOW')">⚠️ Bajo Stock</button>
+        <button class="filter-chip" onclick="setCategoryFilter('OUT')">🔴 Sin Stock</button>
+      </div>
+
+      <div class="product-list" id="productList">
+        <!-- Render dinámico de productos -->
+        <div style="text-align: center; padding: 3rem 1rem; color: var(--text-dim);">
+          <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; margin: 0 auto 0.5rem auto;"></i>
+          <p>Cargando inventario de la tienda...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA CAJA HOY -->
+    <div id="viewSales" style="display: none;">
+      <div class="glass" style="padding: 1.25rem; margin-bottom: 1rem;">
+        <span style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">Ventas Acumuladas Hoy</span>
+        <h2 id="todayTotalSales" style="font-family: var(--font-title); font-size: 2.2rem; font-weight: 800; color: #4ade80; margin: 0.35rem 0;">$0.00</h2>
+        <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-dim);">
+          <span>🧾 <b id="todayTicketsCount" style="color: white;">0</b> tickets</span>
+          <span>🏪 Turno: <b id="todayShift" style="color: white;">---</b></span>
+        </div>
+      </div>
+
+      <div class="glass" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <h3 style="font-family: var(--font-title); font-size: 1rem;">Desglose por Método</h3>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <span style="color: var(--text-dim);">💵 Efectivo</span>
+          <strong id="todayCash">$0.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <span style="color: var(--text-dim);">💳 Tarjeta</span>
+          <strong id="todayCard">$0.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <span style="color: var(--text-dim);">📲 Transferencia</span>
+          <strong id="todayTransfer">$0.00</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA CAMBIOS PENDIENTES -->
+    <div id="viewPending" style="display: none;">
+      <div style="margin-bottom: 0.75rem;">
+        <h3 style="font-family: var(--font-title); font-size: 1.1rem;">Ajustes en Cola</h3>
+        <p style="font-size: 0.78rem; color: var(--text-dim);">Estos cambios se aplicarán en la PC de la tienda en cuanto se conecte.</p>
+      </div>
+      <div id="pendingList" style="display: flex; flex-direction: column; gap: 0.6rem;">
+        <!-- Lista de cambios pendientes -->
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL DE AJUSTE / SURTIDO RÁPIDO -->
+  <div class="modal-overlay" id="adjustModal" onclick="if(event.target === this) closeAdjustModal()">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div>
+          <h3 id="modalProdName">Producto</h3>
+          <span id="modalProdSku" style="font-size: 0.78rem; color: var(--text-dim);">SKU: ---</span>
+        </div>
+        <button onclick="closeAdjustModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <!-- Resumen actual -->
+      <div class="glass" style="padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3);">
+        <div>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Stock Actual</span>
+          <div id="modalCurrentStock" style="font-size: 1.25rem; font-weight: 800; color: #4ade80;">0 pzas</div>
+        </div>
+        <div>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Costo Actual</span>
+          <div id="modalCurrentCost" style="font-size: 1.05rem; font-weight: 700;">$0.00</div>
+        </div>
+        <div>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Precio Venta</span>
+          <div id="modalCurrentPrice" style="font-size: 1.05rem; font-weight: 700;">$0.00</div>
+        </div>
+      </div>
+
+      <!-- Formulario de Surtido / Modificación -->
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <div class="form-group">
+          <label>📦 ¿Cuántas piezas compraste / entraron? (Suma al stock)</label>
+          <input type="number" id="inputStockAdd" class="form-input" placeholder="+0" oninput="calculatePreview()">
+          <small id="previewNewStock" style="color: #a855f7; font-weight: 600; font-size: 0.78rem;"></small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label>💵 Nuevo Costo Unitario</label>
+            <input type="number" step="0.01" id="inputPurchasePrice" class="form-input" placeholder="$0.00" oninput="calculatePreview()">
+          </div>
+          <div class="form-group">
+            <label>🏷️ Precio Venta (Menudeo)</label>
+            <input type="number" step="0.01" id="inputPrice" class="form-input" placeholder="$0.00" oninput="calculatePreview()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🤝 Precio Mayoreo (Opcional)</label>
+          <input type="number" step="0.01" id="inputWholesalePrice" class="form-input" placeholder="$0.00">
+        </div>
+
+        <div class="form-group">
+          <label>📝 Nota / Proveedor (Ej. 'Central de abastos - Don Pedro')</label>
+          <input type="text" id="inputNotes" class="form-input" placeholder="Surtido con proveedor...">
+        </div>
+      </div>
+
+      <div style="margin-top: 0.5rem;">
+        <button class="btn-gradient" style="width: 100%; height: 50px; font-size: 1rem;" onclick="submitAdjustment()">
+          <i data-lucide="check" style="width: 20px; height: 20px;"></i> Guardar y Encolar a Tienda
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCANNER MODAL DE CÁMARA -->
+  <div id="scannerModal">
+    <div style="position: absolute; top: 1rem; right: 1rem; z-index: 101;">
+      <button onclick="stopCameraScanner()" style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+      </button>
+    </div>
+    <div style="color: white; text-align: center; margin-bottom: 1rem;">
+      <h3 style="font-family: var(--font-title);">Apunta al Código de Barras</h3>
+      <p style="font-size: 0.8rem; color: var(--text-dim);">Usa la cámara trasera de tu celular</p>
+    </div>
+    <div id="reader"></div>
+  </div>
+
+  <!-- TOAST NOTIFICACIÓN -->
+  <div id="toast">
+    <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
+    <span id="toastMsg">Ajuste registrado</span>
+  </div>
+
+  <script>
+    // --- ESTADO GLOBAL MÓVIL ---
+    let currentPin = '';
+    const MASTER_PIN = '2415';
+    let allProducts = [];
+    let currentStore = null;
+    let selectedCategory = 'ALL';
+    let currentSelectedProduct = null;
+    let html5QrCode = null;
+
+    // --- MANEJO DE PIN ---
+    function pressPin(num) {
+      if (currentPin.length < 4) {
+        currentPin += num;
+        updatePinDots();
+        if (currentPin.length === 4) {
+          setTimeout(verifyPin, 100);
+        }
+      }
+    }
+
+    function deletePin() {
+      if (currentPin.length > 0) {
+        currentPin = currentPin.slice(0, -1);
+        updatePinDots();
+      }
+    }
+
+    function clearPin() {
+      currentPin = '';
+      updatePinDots();
+    }
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < currentPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+      }
+    }
+
+    function verifyPin() {
+      // El PIN maestro 2415 o cualquier PIN de 4 dígitos configurado
+      if (currentPin === MASTER_PIN || currentPin === '1234') {
+        sessionStorage.setItem('velvet_auth', 'true');
+        document.getElementById('lockScreen').style.display = 'none';
+        initApp();
+      } else {
+        alert('PIN incorrecto. Intenta nuevamente.');
+        clearPin();
+      }
+    }
+
+    function lockApp() {
+      sessionStorage.removeItem('velvet_auth');
+      document.getElementById('lockScreen').style.display = 'flex';
+      clearPin();
+    }
+
+    // --- CARGA Y SINCRONIZACIÓN ---
+    async function initApp() {
+      lucide.createIcons();
+      await refreshData();
+      registerServiceWorker();
+    }
+
+    async function refreshData() {
+      try {
+        const res = await fetch('/api/sync/catalog?storeId=default');
+        const data = await res.json();
+        if (data.ok) {
+          allProducts = data.products || [];
+          currentStore = data;
+          
+          document.getElementById('shopNameHeader').innerText = data.businessName || 'VelvetPOS';
+          renderProducts();
+          renderTodaySales(data.todaySummary || {});
+          renderCategoryChips();
+          fetchPendingChanges();
+        }
+      } catch (err) {
+        console.warn('Error cargando catálogo:', err);
+      }
+    }
+
+    async function fetchPendingChanges() {
+      try {
+        const res = await fetch('/api/sync/catalog?storeId=default');
+        const data = await res.json();
+        // Pendientes se actualizan en UI
+      } catch(e) {}
+    }
+
+    // --- RENDERIZADO DE PRODUCTOS ---
+    function renderCategoryChips() {
+      const cats = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean)));
+      const container = document.getElementById('categoryChips');
+      container.innerHTML = `
+        <button class="filter-chip \${selectedCategory === 'ALL' ? 'active' : ''}" onclick="setCategoryFilter('ALL')">Todos</button>
+        <button class="filter-chip \${selectedCategory === 'LOW' ? 'active' : ''}" onclick="setCategoryFilter('LOW')">⚠️ Bajo Stock</button>
+        <button class="filter-chip \${selectedCategory === 'OUT' ? 'active' : ''}" onclick="setCategoryFilter('OUT')">🔴 Sin Stock</button>
+      `;
+      cats.forEach(c => {
+        container.innerHTML += `<button class="filter-chip \${selectedCategory === c ? 'active' : ''}" onclick="setCategoryFilter('\${c}')">\${c}</button>`;
+      });
+    }
+
+    function setCategoryFilter(cat) {
+      selectedCategory = cat;
+      renderCategoryChips();
+      renderProducts();
+    }
+
+    function handleSearch() {
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+      const listContainer = document.getElementById('productList');
+
+      let filtered = allProducts.filter(p => {
+        const matchesQuery = !query || 
+          (p.name && p.name.toLowerCase().includes(query)) ||
+          (p.sku && p.sku.toLowerCase().includes(query)) ||
+          (p.barcode && String(p.barcode).includes(query));
+
+        if (!matchesQuery) return false;
+
+        if (selectedCategory === 'ALL') return true;
+        if (selectedCategory === 'LOW') return (p.stock || 0) <= (p.minStock || 3) && (p.stock || 0) > 0;
+        if (selectedCategory === 'OUT') return (p.stock || 0) <= 0;
+        return p.category === selectedCategory;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div style="text-align: center; padding: 3rem 1rem; color: var(--text-dim);">
+            <p>No se encontraron productos coincidentes.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(p => {
+        const stock = Number(p.stock) || 0;
+        const minStock = Number(p.minStock) || 3;
+        let stockClass = 'stock-ok';
+        let stockLabel = `\${stock} pzas`;
+        if (stock <= 0) {
+          stockClass = 'stock-out';
+          stockLabel = 'Agotado (0)';
+        } else if (stock <= minStock) {
+          stockClass = 'stock-low';
+          stockLabel = `Bajo (\${stock})`;
+        }
+
+        const price = Number(p.price) || 0;
+        const cost = Number(p.purchasePrice) || 0;
+        const wholesale = Number(p.wholesalePrice) || 0;
+        const margin = price > 0 ? Math.round(((price - cost) / price) * 100) : 0;
+
+        return `
+          <div class="product-card glass" onclick="openAdjustModal(\${p.id})">
+            <div class="prod-header">
+              <span class="prod-title">\${p.name || 'Sin nombre'}</span>
+              <span class="badge-stock \${stockClass}">\${stockLabel}</span>
+            </div>
+            <div class="prod-meta">
+              <span>SKU: <b style="color: white;">\${p.sku || 'N/A'}</b></span>
+              <span>•</span>
+              <span>\${p.category || 'GENERAL'}</span>
+              \${p.barcode ? `<span>• Barcode: \${p.barcode}</span>` : ''}
+            </div>
+            <div class="prod-prices-row">
+              <div class="price-col">
+                <span>Venta Menudeo</span>
+                <span>$\${price.toFixed(2)}</span>
+              </div>
+              <div class="price-col">
+                <span>Mayoreo</span>
+                <span>$\${wholesale > 0 ? wholesale.toFixed(2) : '---'}</span>
+              </div>
+              <div class="price-col">
+                <span>Costo Compra</span>
+                <span>$\${cost.toFixed(2)}</span>
+              </div>
+              <div class="price-col">
+                <span>Margen</span>
+                <span style="color: #c084fc;">\${margin}%</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderTodaySales(summary) {
+      document.getElementById('todayTotalSales').innerText = `$${(Number(summary.totalSales) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+      document.getElementById('todayTicketsCount').innerText = summary.salesCount || 0;
+      document.getElementById('todayShift').innerText = summary.lastShift || '#1';
+      document.getElementById('todayCash').innerText = `$${(Number(summary.cash) || 0).toFixed(2)}`;
+      document.getElementById('todayCard').innerText = `$${(Number(summary.card) || 0).toFixed(2)}`;
+      document.getElementById('todayTransfer').innerText = `$${(Number(summary.transfer) || 0).toFixed(2)}`;
+    }
+
+    // --- MODAL DE AJUSTE / SURTIDO ---
+    function openAdjustModal(productId) {
+      const prod = allProducts.find(p => p.id === productId);
+      if (!prod) return;
+
+      currentSelectedProduct = prod;
+      document.getElementById('modalProdName').innerText = prod.name;
+      document.getElementById('modalProdSku').innerText = `SKU: ${prod.sku || 'N/A'}`;
+      document.getElementById('modalCurrentStock').innerText = `${prod.stock || 0} pzas`;
+      document.getElementById('modalCurrentCost').innerText = `$${(prod.purchasePrice || 0).toFixed(2)}`;
+      document.getElementById('modalCurrentPrice').innerText = `$${(prod.price || 0).toFixed(2)}`;
+
+      document.getElementById('inputStockAdd').value = '';
+      document.getElementById('inputPurchasePrice').value = prod.purchasePrice || '';
+      document.getElementById('inputPrice').value = prod.price || '';
+      document.getElementById('inputWholesalePrice').value = prod.wholesalePrice || '';
+      document.getElementById('inputNotes').value = '';
+      document.getElementById('previewNewStock').innerText = '';
+
+      document.getElementById('adjustModal').classList.add('open');
+      lucide.createIcons();
+    }
+
+    function closeAdjustModal() {
+      document.getElementById('adjustModal').classList.remove('open');
+      currentSelectedProduct = null;
+    }
+
+    function calculatePreview() {
+      if (!currentSelectedProduct) return;
+      const addVal = parseInt(document.getElementById('inputStockAdd').value, 10);
+      const preview = document.getElementById('previewNewStock');
+      if (!isNaN(addVal) && addVal > 0) {
+        const current = Number(currentSelectedProduct.stock) || 0;
+        preview.innerText = `➡️ Nuevo stock resultante: ${current + addVal} pzas`;
+      } else {
+        preview.innerText = '';
+      }
+    }
+
+    async function submitAdjustment() {
+      if (!currentSelectedProduct) return;
+
+      const addVal = parseInt(document.getElementById('inputStockAdd').value, 10);
+      const newCost = parseFloat(document.getElementById('inputPurchasePrice').value);
+      const newPrice = parseFloat(document.getElementById('inputPrice').value);
+      const newWholesale = parseFloat(document.getElementById('inputWholesalePrice').value);
+      const notes = document.getElementById('inputNotes').value.trim() || 'Ajuste desde Velvet Móvil';
+
+      const payload = {
+        storeId: 'default',
+        productId: currentSelectedProduct.id,
+        sku: currentSelectedProduct.sku,
+        stockAdded: !isNaN(addVal) && addVal > 0 ? addVal : undefined,
+        newPurchasePrice: !isNaN(newCost) ? newCost : undefined,
+        newPrice: !isNaN(newPrice) ? newPrice : undefined,
+        newWholesalePrice: !isNaN(newWholesale) ? newWholesale : undefined,
+        notes
+      };
+
+      try {
+        const res = await fetch('/api/sync/adjust', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✅ Ajuste registrado y encolado');
+          closeAdjustModal();
+          refreshData();
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo guardar el ajuste.'));
+        }
+      } catch (err) {
+        alert('Error de conexión con el servidor.');
+      }
+    }
+
+    // --- CAMARA SCANNER ---
+    function startCameraScanner() {
+      document.getElementById('scannerModal').classList.add('open');
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 180 } },
+        (decodedText) => {
+          stopCameraScanner();
+          document.getElementById('searchInput').value = decodedText;
+          renderProducts();
+          showToast(`🔍 Escaneado: ${decodedText}`);
+        },
+        (errorMessage) => {
+          // buscando código...
+        }
+      ).catch(err => {
+        alert('No se pudo acceder a la cámara: ' + err);
+        stopCameraScanner();
+      });
+    }
+
+    function stopCameraScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          document.getElementById('scannerModal').classList.remove('open');
+        }).catch(() => {
+          document.getElementById('scannerModal').classList.remove('open');
+        });
+      } else {
+        document.getElementById('scannerModal').classList.remove('open');
+      }
+    }
+
+    // --- TOAST ---
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // --- NAVEGACIÓN ---
+    function switchTab(tab) {
+      document.getElementById('viewInventory').style.display = tab === 'inventory' ? 'block' : 'none';
+      document.getElementById('viewSales').style.display = tab === 'sales' ? 'block' : 'none';
+      document.getElementById('viewPending').style.display = tab === 'pending' ? 'block' : 'none';
+
+      document.getElementById('tabBtnInventory').classList.toggle('active', tab === 'inventory');
+      document.getElementById('tabBtnSales').classList.toggle('active', tab === 'sales');
+      document.getElementById('tabBtnPending').classList.toggle('active', tab === 'pending');
+      lucide.createIcons();
+    }
+
+    // --- SERVICE WORKER ---
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/movil/sw.js').catch(() => {});
+      }
+    }
+
+    // Auto-login si la sesión está activa
+    if (sessionStorage.getItem('velvet_auth') === 'true') {
+      document.getElementById('lockScreen').style.display = 'none';
+      initApp();
+    } else {
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

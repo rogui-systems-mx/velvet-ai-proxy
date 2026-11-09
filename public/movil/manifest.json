@@ -1,0 +1,25 @@
+{
+  "name": "Velvet Móvil — Dueño & Inventario",
+  "short_name": "Velvet Móvil",
+  "description": "Control remoto de inventario, precios y compras de mercancía para el dueño de VelvetPOS",
+  "start_url": "/movil/",
+  "scope": "/movil/",
+  "display": "standalone",
+  "background_color": "#0d0b14",
+  "theme_color": "#9d50bb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/movil/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/movil/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
