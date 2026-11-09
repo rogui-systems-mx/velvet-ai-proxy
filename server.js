@@ -17,9 +17,6 @@ app.get('/movil', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'movil', 'index.html'));
 });
 
-app.get('/movil/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'movil', 'index.html'));
-});
 
 app.get('/', (req, res) => {
   res.redirect('/licencias');
