@@ -1,11 +1,21 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/licencias', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'licencias', 'index.html'));
+});
+
+app.get('/', (req, res) => {
+  res.redirect('/licencias');
+});
 
 // Verifica la API Key
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
