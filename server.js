@@ -17,6 +17,34 @@ app.get('/', (req, res) => {
   res.redirect('/licencias');
 });
 
+// Webhook de Telegram para el Bot Oficial de VelvetPOS (@velvetpos_alertas_bot)
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '9241983174:AAHyunZLQ7Sz6t6HfL9w9wm0AGWmAeNgX9U';
+
+app.post('/api/telegram-webhook', async (req, res) => {
+  try {
+    const update = req.body;
+    if (update && update.message && update.message.chat) {
+      const chatId = update.message.chat.id;
+      const firstName = update.message.chat.first_name || 'amigo(a)';
+
+      const replyText = `¡Hola, <b>${firstName}</b>! 👋\nBienvenido(a) a <b>VelvetPOS Alertas</b> 🏪\n\nTu <b>Chat ID</b> para recibir reportes es:\n<code>${chatId}</code>\n\n👉 <i>Toca el número para copiarlo y pégalo en tu sistema VelvetPOS (Configuración ➔ Notificaciones por Telegram).</i>`;
+
+      await fetch(\`https://api.telegram.org/bot\${TELEGRAM_BOT_TOKEN}/sendMessage\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: replyText,
+          parse_mode: 'HTML'
+        })
+      });
+    }
+  } catch (err) {
+    console.error('Error handling telegram webhook:', err);
+  }
+  res.sendStatus(200);
+});
+
 // Verifica la API Key
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
