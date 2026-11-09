@@ -516,7 +516,22 @@
     #toast.show {
       transform: translateX(-50%) translateY(0);
     }
-  </style>
+  
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake {
+      animation: shake 0.35s ease-in-out;
+    }
+    .pin-dot.error {
+      background: var(--danger) !important;
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6) !important;
+    }
+  
+    </style>
 </head>
 <body>
 
@@ -534,6 +549,7 @@
       <div class="pin-dot" id="dot-2"></div>
       <div class="pin-dot" id="dot-3"></div>
     </div>
+    <div id="pinErrorMsg" style="color: #f87171; font-size: 0.82rem; font-weight: 600; min-height: 1.25rem; margin-bottom: 0.75rem; text-align: center;"></div>
 
     <div class="pin-keypad">
       <button class="key-btn" onclick="pressPin('1')">1</button>
@@ -783,17 +799,71 @@
       }
     }
 
-    function verifyPin() {
-      // El PIN maestro 2415 o cualquier PIN de 4 dígitos configurado
-      if (currentPin === MASTER_PIN || currentPin === '1234') {
-        sessionStorage.setItem('velvet_auth', 'true');
-        document.getElementById('lockScreen').style.display = 'none';
-        initApp();
+        function showPinError(msg) {
+      const errorEl = document.getElementById('pinErrorMsg');
+      if (errorEl) errorEl.textContent = msg || 'PIN incorrecto. Intenta de nuevo.';
+      const dots = document.querySelector('.pin-dots');
+      if (dots) {
+        dots.classList.add('shake');
+        for (let i = 0; i < 4; i++) {
+          const d = document.getElementById(`dot-${i}`);
+          if (d) d.classList.add('error');
+        }
+        setTimeout(() => {
+          dots.classList.remove('shake');
+          clearPin();
+          if (errorEl) {
+            setTimeout(() => { errorEl.textContent = ''; }, 2500);
+          }
+        }, 500);
       } else {
-        alert('PIN incorrecto. Intenta nuevamente.');
         clearPin();
       }
     }
+
+    function verifyPin() {
+      const pin = currentPin.trim();
+      // Acepta el PIN Maestro 2415 o cualquier PIN admin
+      if (pin === MASTER_PIN || pin === '2415' || pin === '1234' || (currentStore && String(currentStore.adminPin) === pin)) {
+        sessionStorage.setItem('velvet_auth', 'true');
+        const lock = document.getElementById('lockScreen');
+        if (lock) {
+          lock.style.transition = 'opacity 0.25s ease';
+          lock.style.opacity = '0';
+          setTimeout(() => {
+            lock.style.display = 'none';
+            initApp();
+          }, 250);
+        } else {
+          initApp();
+        }
+      } else {
+        showPinError('PIN incorrecto. (Usa 2415)');
+      }
+    }
+
+    // Soporte para teclado físico (PC/Laptop)
+    window.addEventListener('keydown', (e) => {
+      const lock = document.getElementById('lockScreen');
+      if (lock && lock.style.display !== 'none') {
+        if (e.key >= '0' && e.key <= '9') {
+          pressPin(e.key);
+        } else if (e.key === 'Backspace') {
+          deletePin();
+        } else if (e.key === 'Escape' || e.key === 'Delete') {
+          clearPin();
+        }
+      }
+    });
+
+    // Auto-login si ya autenticado en la sesión
+    window.addEventListener('DOMContentLoaded', () => {
+      if (sessionStorage.getItem('velvet_auth') === 'true') {
+        const lock = document.getElementById('lockScreen');
+        if (lock) lock.style.display = 'none';
+        initApp();
+      }
+    });
 
     function lockApp() {
       sessionStorage.removeItem('velvet_auth');
@@ -840,12 +910,12 @@
       const cats = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean)));
       const container = document.getElementById('categoryChips');
       container.innerHTML = `
-        <button class="filter-chip \${selectedCategory === 'ALL' ? 'active' : ''}" onclick="setCategoryFilter('ALL')">Todos</button>
-        <button class="filter-chip \${selectedCategory === 'LOW' ? 'active' : ''}" onclick="setCategoryFilter('LOW')">⚠️ Bajo Stock</button>
-        <button class="filter-chip \${selectedCategory === 'OUT' ? 'active' : ''}" onclick="setCategoryFilter('OUT')">🔴 Sin Stock</button>
+        <button class="filter-chip ${selectedCategory === 'ALL' ? 'active' : ''}" onclick="setCategoryFilter('ALL')">Todos</button>
+        <button class="filter-chip ${selectedCategory === 'LOW' ? 'active' : ''}" onclick="setCategoryFilter('LOW')">⚠️ Bajo Stock</button>
+        <button class="filter-chip ${selectedCategory === 'OUT' ? 'active' : ''}" onclick="setCategoryFilter('OUT')">🔴 Sin Stock</button>
       `;
       cats.forEach(c => {
-        container.innerHTML += `<button class="filter-chip \${selectedCategory === c ? 'active' : ''}" onclick="setCategoryFilter('\${c}')">\${c}</button>`;
+        container.innerHTML += `<button class="filter-chip ${selectedCategory === c ? 'active' : ''}" onclick="setCategoryFilter('${c}')">${c}</button>`;
       });
     }
 
@@ -890,13 +960,13 @@
         const stock = Number(p.stock) || 0;
         const minStock = Number(p.minStock) || 3;
         let stockClass = 'stock-ok';
-        let stockLabel = `\${stock} pzas`;
+        let stockLabel = `${stock} pzas`;
         if (stock <= 0) {
           stockClass = 'stock-out';
           stockLabel = 'Agotado (0)';
         } else if (stock <= minStock) {
           stockClass = 'stock-low';
-          stockLabel = `Bajo (\${stock})`;
+          stockLabel = `Bajo (${stock})`;
         }
 
         const price = Number(p.price) || 0;
@@ -905,33 +975,33 @@
         const margin = price > 0 ? Math.round(((price - cost) / price) * 100) : 0;
 
         return `
-          <div class="product-card glass" onclick="openAdjustModal(\${p.id})">
+          <div class="product-card glass" onclick="openAdjustModal(${p.id})">
             <div class="prod-header">
-              <span class="prod-title">\${p.name || 'Sin nombre'}</span>
-              <span class="badge-stock \${stockClass}">\${stockLabel}</span>
+              <span class="prod-title">${p.name || 'Sin nombre'}</span>
+              <span class="badge-stock ${stockClass}">${stockLabel}</span>
             </div>
             <div class="prod-meta">
-              <span>SKU: <b style="color: white;">\${p.sku || 'N/A'}</b></span>
+              <span>SKU: <b style="color: white;">${p.sku || 'N/A'}</b></span>
               <span>•</span>
-              <span>\${p.category || 'GENERAL'}</span>
-              \${p.barcode ? `<span>• Barcode: \${p.barcode}</span>` : ''}
+              <span>${p.category || 'GENERAL'}</span>
+              ${p.barcode ? `<span>• Barcode: ${p.barcode}</span>` : ''}
             </div>
             <div class="prod-prices-row">
               <div class="price-col">
                 <span>Venta Menudeo</span>
-                <span>$\${price.toFixed(2)}</span>
+                <span>$${price.toFixed(2)}</span>
               </div>
               <div class="price-col">
                 <span>Mayoreo</span>
-                <span>$\${wholesale > 0 ? wholesale.toFixed(2) : '---'}</span>
+                <span>$${wholesale > 0 ? wholesale.toFixed(2) : '---'}</span>
               </div>
               <div class="price-col">
                 <span>Costo Compra</span>
-                <span>$\${cost.toFixed(2)}</span>
+                <span>$${cost.toFixed(2)}</span>
               </div>
               <div class="price-col">
                 <span>Margen</span>
-                <span style="color: #c084fc;">\${margin}%</span>
+                <span style="color: #c084fc;">${margin}%</span>
               </div>
             </div>
           </div>
