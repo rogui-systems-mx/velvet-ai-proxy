@@ -1,4 +1,4 @@
-const CACHE_NAME = 'velvet-movil-v1';
+const CACHE_NAME = 'velvet-movil-v2';
 const ASSETS = [
   '/movil/',
   '/movil/index.html',
@@ -28,10 +28,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network first for API, cache first for assets
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(fetch(event.request));
+  const url = event.request.url;
+  // Network first para API y para páginas HTML (navegación)
+  if (url.includes('/api/') || event.request.mode === 'navigate' || url.endsWith('/movil/') || url.includes('index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Actualiza caché en segundo plano
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
   } else {
+    // Cache first para imágenes e iconos
     event.respondWith(
       caches.match(event.request).then((cached) => cached || fetch(event.request))
     );
