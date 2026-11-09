@@ -20,6 +20,10 @@ app.get('/', (req, res) => {
 // Webhook de Telegram para el Bot Oficial de VelvetPOS (@velvetpos_alertas_bot)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '9241983174:AAHyunZLQ7Sz6t6HfL9w9wm0AGWmAeNgX9U';
 
+app.get('/api/telegram-webhook', (req, res) => {
+  res.json({ ok: true, service: 'VelvetPOS Telegram Webhook', bot: '@velvetpos_alertas_bot' });
+});
+
 app.post('/api/telegram-webhook', async (req, res) => {
   try {
     const update = req.body;
@@ -29,7 +33,8 @@ app.post('/api/telegram-webhook', async (req, res) => {
 
       const replyText = `¡Hola, <b>${firstName}</b>! 👋\nBienvenido(a) a <b>VelvetPOS Alertas</b> 🏪\n\nTu <b>Chat ID</b> para recibir reportes es:\n<code>${chatId}</code>\n\n👉 <i>Toca el número para copiarlo y pégalo en tu sistema VelvetPOS (Configuración ➔ Notificaciones por Telegram).</i>`;
 
-      await fetch(\`https://api.telegram.org/bot\${TELEGRAM_BOT_TOKEN}/sendMessage\`, {
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
