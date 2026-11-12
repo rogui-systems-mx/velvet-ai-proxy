@@ -1128,6 +1128,93 @@
   <!-- JAVASCRIPT DE CONTROL Y LÓGICA DE NEGOCIO                                 -->
   <!-- ========================================================================= -->
   <script>
+// ============================================================================
+// REGLAS MAESTRAS DE ESTANDARIZACIÓN TIPOGRÁFICA VELVET
+// ============================================================================
+const LOWERCASE_WORDS = new Set([
+  'de', 'del', 'la', 'las', 'el', 'los', 'en', 'con', 'y', 'o', 'a', 'al', 'para', 'por', 'sin', 'c/', 's/'
+]);
+const ROMAN_NUMERALS = new Set([
+  'ii', 'iii', 'iv', 'vi', 'vii', 'viii', 'ix', 'xi', 'xii'
+]);
+const SINGLE_LETTER_UPPER = new Set(['v', 'u', 'x']);
+const PRESERVED_ACRONYMS = new Set([
+  'cfe', 'sat', 'rfc', 'pos', 'usd', 'mxn', 'pwa', 'sku', 'iva', 'ieps', 'oxxo', 'bbva', 'spei', 'vip',
+  'ii', 'iii', 'iv', 'vi', 'vii', 'viii', 'ix', 'xi', 'xii'
+]);
+
+function capitalizeWord(word) {
+  if (!word) return '';
+  let firstLetterIndex = -1;
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    if (ch.toLowerCase() !== ch.toUpperCase()) {
+      firstLetterIndex = i;
+      break;
+    }
+  }
+  if (firstLetterIndex === -1) return word;
+  return word.slice(0, firstLetterIndex) + word.charAt(firstLetterIndex).toUpperCase() + word.slice(firstLetterIndex + 1);
+}
+
+function toTitleCase(text) {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  const words = clean.split(' ');
+  return words.map((word, index) => {
+    const lower = word.toLowerCase();
+    const cleanWord = lower.replace(/^[^\wáéíóúñü]+|[^\wáéíóúñü]+$/gi, '');
+    if (ROMAN_NUMERALS.has(cleanWord) || (cleanWord.length === 1 && SINGLE_LETTER_UPPER.has(cleanWord))) {
+      return word.toUpperCase();
+    }
+    if (index > 0 && LOWERCASE_WORDS.has(cleanWord)) {
+      return lower;
+    }
+    if (word.includes('-')) {
+      return word.split('-').map((subWord, subIdx) => {
+        const subLower = subWord.toLowerCase();
+        const cleanSub = subLower.replace(/^[^\wáéíóúñü]+|[^\wáéíóúñü]+$/gi, '');
+        if (index > 0 && subIdx > 0 && LOWERCASE_WORDS.has(cleanSub)) return subLower;
+        return capitalizeWord(subLower);
+      }).join('-');
+    }
+    return capitalizeWord(lower);
+  }).join(' ');
+}
+
+function toTechnicalCase(text) {
+  if (!text) return '';
+  return text.replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function toEmailCase(text) {
+  if (!text) return '';
+  return text.trim().toLowerCase();
+}
+
+function toSentenceCase(text) {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  const isAllUpper = clean.length > 3 && clean === clean.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(clean);
+  const baseText = isAllUpper ? clean.toLowerCase() : clean;
+  const sentences = baseText.split(/([.!?\n]+\s*)/);
+  const formatted = sentences.map((part) => {
+    if (/^[.!?\n\s]+$/.test(part)) return part;
+    const words = part.split(' ');
+    const formattedWords = words.map((word, wIdx) => {
+      const lower = word.toLowerCase();
+      const cleanWord = lower.replace(/^[^\wáéíóúñü]+|[^\wáéíóúñü]+$/gi, '');
+      if (PRESERVED_ACRONYMS.has(cleanWord)) return word.toUpperCase();
+      if (wIdx === 0) return capitalizeWord(word);
+      return word;
+    });
+    return formattedWords.join(' ');
+  });
+  return formatted.join('');
+}
+
     // --- ESTADO GLOBAL ---
     let currentPin = '';
     const MASTER_PIN = '2415';
@@ -1391,13 +1478,13 @@
 
         return '<div class="product-card glass" onclick="openAdjustModal(' + p.id + ')">' +
           '<div class="prod-header">' +
-            '<span class="prod-title">' + (p.name || 'Sin nombre') + '</span>' +
+            '<span class="prod-title">' + toTitleCase(p.name || 'Sin nombre') + '</span>' +
             '<span class="badge-stock ' + stockClass + '">' + stockLabel + '</span>' +
           '</div>' +
           '<div style="display: flex; gap: 0.5rem; font-size: 0.75rem; color: var(--text-dim);">' +
             '<span>SKU: <b style="color: white;">' + (p.sku || 'N/A') + '</b></span>' +
             '<span>•</span>' +
-            '<span>' + (p.category || 'GENERAL') + '</span>' +
+            '<span>' + toTechnicalCase(p.category || 'GENERAL') + '</span>' +
             (p.barcode ? '<span>• ' + p.barcode + '</span>' : '') +
           '</div>' +
           '<div class="prod-prices-row">' +
@@ -1494,7 +1581,7 @@
     }
 
     async function submitSupplier() {
-      const name = (document.getElementById('inputSupName').value || '').trim();
+      const name = toTitleCase((document.getElementById('inputSupName').value || '').trim());
       if (!name) {
         alert('Por favor ingresa el nombre de la empresa o proveedor.');
         return;
@@ -1503,11 +1590,11 @@
       const supplierData = {
         id: document.getElementById('inputSupId').value || undefined,
         name,
-        contactName: (document.getElementById('inputSupContact').value || '').trim(),
+        contactName: toTitleCase((document.getElementById('inputSupContact').value || '').trim()),
         phone: (document.getElementById('inputSupPhone').value || '').trim(),
-        email: (document.getElementById('inputSupEmail').value || '').trim(),
+        email: toEmailCase((document.getElementById('inputSupEmail').value || '').trim()),
         address: (document.getElementById('inputSupAddress').value || '').trim(),
-        notes: (document.getElementById('inputSupNotes').value || '').trim()
+        notes: toSentenceCase((document.getElementById('inputSupNotes').value || '').trim())
       };
 
       try {
@@ -1862,8 +1949,8 @@
     }
 
     async function submitPurchase(force = false) {
-      const supplier = (document.getElementById('purchaseSupplierSelect').value || '').trim();
-      const folio = (document.getElementById('purchaseFolioInput').value || '').trim();
+      const supplier = toTitleCase((document.getElementById('purchaseSupplierSelect').value || '').trim());
+      const folio = toTechnicalCase((document.getElementById('purchaseFolioInput').value || '').trim());
 
       if (!supplier) {
         alert('Por favor selecciona o escribe el nombre del proveedor.');
@@ -2006,7 +2093,7 @@
       const newCost = parseFloat(document.getElementById('inputNewCost').value);
       const newPrice = parseFloat(document.getElementById('inputNewPrice').value);
       const newWholesale = parseFloat(document.getElementById('inputNewWholesale').value);
-      const notes = document.getElementById('inputNotes').value.trim() || 'Ajuste desde Velvet Móvil';
+      const notes = toSentenceCase(document.getElementById('inputNotes').value.trim() || 'Ajuste desde Velvet Móvil');
 
       if (isNaN(added) && isNaN(newCost) && isNaN(newPrice) && isNaN(newWholesale)) {
         alert('Ingresa al menos un cambio (piezas a surtir, costo o precio).');

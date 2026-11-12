@@ -63,6 +63,94 @@ app.post('/api/telegram-webhook', async (req, res) => {
 const DATA_DIR = path.join(__dirname, 'data');
 const CLOUD_STORE_FILE = path.join(DATA_DIR, 'cloud_store.json');
 
+// ============================================================================
+// REGLAS MAESTRAS DE ESTANDARIZACIÓN TIPOGRÁFICA VELVET
+// ============================================================================
+const LOWERCASE_WORDS = new Set([
+  'de', 'del', 'la', 'las', 'el', 'los', 'en', 'con', 'y', 'o', 'a', 'al', 'para', 'por', 'sin', 'c/', 's/'
+]);
+const ROMAN_NUMERALS = new Set([
+  'ii', 'iii', 'iv', 'vi', 'vii', 'viii', 'ix', 'xi', 'xii'
+]);
+const SINGLE_LETTER_UPPER = new Set(['v', 'u', 'x']);
+const PRESERVED_ACRONYMS = new Set([
+  'cfe', 'sat', 'rfc', 'pos', 'usd', 'mxn', 'pwa', 'sku', 'iva', 'ieps', 'oxxo', 'bbva', 'spei', 'vip',
+  'ii', 'iii', 'iv', 'vi', 'vii', 'viii', 'ix', 'xi', 'xii'
+]);
+
+function capitalizeWord(word) {
+  if (!word) return '';
+  let firstLetterIndex = -1;
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    if (ch.toLowerCase() !== ch.toUpperCase()) {
+      firstLetterIndex = i;
+      break;
+    }
+  }
+  if (firstLetterIndex === -1) return word;
+  return word.slice(0, firstLetterIndex) + word.charAt(firstLetterIndex).toUpperCase() + word.slice(firstLetterIndex + 1);
+}
+
+function toTitleCase(text) {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  const words = clean.split(' ');
+  return words.map((word, index) => {
+    const lower = word.toLowerCase();
+    const cleanWord = lower.replace(/^[^\wáéíóúñü]+|[^\wáéíóúñü]+$/gi, '');
+    if (ROMAN_NUMERALS.has(cleanWord) || (cleanWord.length === 1 && SINGLE_LETTER_UPPER.has(cleanWord))) {
+      return word.toUpperCase();
+    }
+    if (index > 0 && LOWERCASE_WORDS.has(cleanWord)) {
+      return lower;
+    }
+    if (word.includes('-')) {
+      return word.split('-').map((subWord, subIdx) => {
+        const subLower = subWord.toLowerCase();
+        const cleanSub = subLower.replace(/^[^\wáéíóúñü]+|[^\wáéíóúñü]+$/gi, '');
+        if (index > 0 && subIdx > 0 && LOWERCASE_WORDS.has(cleanSub)) return subLower;
+        return capitalizeWord(subLower);
+      }).join('-');
+    }
+    return capitalizeWord(lower);
+  }).join(' ');
+}
+
+function toTechnicalCase(text) {
+  if (!text) return '';
+  return text.replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function toEmailCase(text) {
+  if (!text) return '';
+  return text.trim().toLowerCase();
+}
+
+function toSentenceCase(text) {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  const isAllUpper = clean.length > 3 && clean === clean.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(clean);
+  const baseText = isAllUpper ? clean.toLowerCase() : clean;
+  const sentences = baseText.split(/([.!?\n]+\s*)/);
+  const formatted = sentences.map((part) => {
+    if (/^[.!?\n\s]+$/.test(part)) return part;
+    const words = part.split(' ');
+    const formattedWords = words.map((word, wIdx) => {
+      const lower = word.toLowerCase();
+      const cleanWord = lower.replace(/^[^\wáéíóúñü]+|[^\wáéíóúñü]+$/gi, '');
+      if (PRESERVED_ACRONYMS.has(cleanWord)) return word.toUpperCase();
+      if (wIdx === 0) return capitalizeWord(word);
+      return word;
+    });
+    return formattedWords.join(' ');
+  });
+  return formatted.join('');
+}
+
+
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -307,6 +395,8 @@ app.post('/api/sync/purchase', (req, res) => {
     const finalPurchase = {
       ...purchase,
       id: purchaseId,
+      supplier: toTitleCase(purchase.supplier || 'Proveedor'),
+      folio: toTechnicalCase(purchase.folio || ''),
       date: purchase.date || new Date().toISOString(),
       status: 'active'
     };
@@ -388,7 +478,11 @@ app.post('/api/sync/supplier', (req, res) => {
     const supId = supplier.id || `sup_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const finalSupplier = {
       ...supplier,
-      id: supId
+      id: supId,
+      name: toTitleCase(supplier.name || ''),
+      contactName: supplier.contactName ? toTitleCase(supplier.contactName) : '',
+      email: supplier.email ? toEmailCase(supplier.email) : '',
+      notes: supplier.notes ? toSentenceCase(supplier.notes) : ''
     };
 
     // Actualizar en memoria
