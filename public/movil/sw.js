@@ -1,4 +1,4 @@
-const CACHE_NAME = 'velvet-movil-v4';
+const CACHE_NAME = 'velvet-movil-v5';
 const ASSETS = [
   '/movil/',
   '/movil/index.html',

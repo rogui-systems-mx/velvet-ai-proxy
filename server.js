@@ -121,13 +121,22 @@ app.post('/api/sync/push', (req, res) => {
     currentStore.machineId = machineId || currentStore.machineId;
     currentStore.lastSyncAt = new Date().toISOString();
     currentStore.todaySummary = todaySummary || currentStore.todaySummary;
-    currentStore.products = products;
+    if (Array.isArray(products) && products.length > 0) {
+      currentStore.products = products;
+    }
     if (Array.isArray(suppliers) && suppliers.length > 0) {
       currentStore.suppliers = suppliers;
     }
     if (Array.isArray(recentPurchases) && recentPurchases.length > 0) {
-      // Combinar compras existentes respetando las más recientes
-      currentStore.purchases = recentPurchases;
+      // Combinar compras preservando las no sincronizadas
+      const seen = new Set();
+      const combined = [...recentPurchases, ...(currentStore.purchases || [])].filter(p => {
+        const key = p.id ? String(p.id) : (p.folio ? String(p.folio) : JSON.stringify(p.items));
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      currentStore.purchases = combined.slice(0, 50);
     }
 
     if (!currentStore.pendingChanges) currentStore.pendingChanges = [];
@@ -304,14 +313,21 @@ app.post('/api/sync/purchase', (req, res) => {
 
     // Actualizar existencias y costos en el catálogo en nube de inmediato para reflejarlo en la PWA
     for (const item of finalPurchase.items) {
-      const prod = (currentStore.products || []).find(p => (item.productId && p.id === item.productId) || (item.sku && p.sku === item.sku));
+      const prod = (currentStore.products || []).find(p => 
+        (item.productId && (p.id == item.productId)) || 
+        (item.sku && p.sku && p.sku.toLowerCase() === item.sku.toLowerCase()) ||
+        (item.name && p.name && p.name.toLowerCase() === item.name.toLowerCase())
+      );
       if (prod) {
-        prod.stock = (Number(prod.stock) || 0) + (Number(item.quantity) || 0);
+        const addedQty = Number(item.quantity) || 0;
+        prod.stock = (Number(prod.stock) || 0) + addedQty;
         if (typeof item.unitCost === 'number' && item.unitCost > 0) {
           prod.purchasePrice = item.unitCost;
         }
         if (typeof item.newPrice === 'number' && item.newPrice > 0) {
           prod.price = item.newPrice;
+        } else if (typeof item.suggestedPrice === 'number' && item.suggestedPrice > 0) {
+          prod.price = item.suggestedPrice;
         }
         if (typeof item.newWholesalePrice === 'number' && item.newWholesalePrice > 0) {
           prod.wholesalePrice = item.newWholesalePrice;
@@ -437,6 +453,31 @@ app.post('/api/sync/ack', (req, res) => {
     });
   } catch (err) {
     console.error('Error in /api/sync/ack:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// 7. Estado rápido de cambios pendientes (para badges en Velvet Móvil sin tocar el catálogo)
+app.get('/api/sync/status', (req, res) => {
+  try {
+    const storeId = req.query.storeId || 'default';
+    const store = loadCloudStore();
+    const currentStore = store.stores[storeId];
+    if (!currentStore) {
+      return res.json({ ok: true, pendingCount: 0 });
+    }
+    const pendingCount = (currentStore.pendingChanges || []).length +
+                         (currentStore.pendingPurchases || []).length +
+                         (currentStore.pendingSuppliers || []).length;
+    res.json({
+      ok: true,
+      pendingCount,
+      pendingChangesCount: (currentStore.pendingChanges || []).length,
+      pendingPurchasesCount: (currentStore.pendingPurchases || []).length,
+      pendingSuppliersCount: (currentStore.pendingSuppliers || []).length,
+      lastSyncAt: currentStore.lastSyncAt
+    });
+  } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });

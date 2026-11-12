@@ -901,6 +901,43 @@
     </div>
   </div>
 
+  <!-- MODAL: REVISIÓN DE VARIACIÓN DE COSTOS -->
+  <div class="modal-overlay" id="costReviewModal" onclick="if(event.target === this) closeCostReviewModal()">
+    <div class="modal-sheet">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; display: flex; align-items: center; justify-content: center; color: #fbbf24; flex-shrink: 0;">
+            <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div>
+            <h3 style="font-family: var(--font-title); font-size: 1.15rem; font-weight: 800; color: white;">Variación de Costo Detectada</h3>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">Revisa los nuevos precios sugeridos al público</span>
+          </div>
+        </div>
+        <button onclick="closeCostReviewModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <p style="font-size: 0.82rem; color: var(--text-dim); line-height: 1.4; margin-top: 0.4rem;">
+        El costo de compra de algunos artículos cambió respecto al catálogo. Te recomendamos actualizar el precio de venta para no reducir tus ganancias:
+      </p>
+
+      <div id="costReviewItemsList" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 260px; overflow-y: auto; margin-top: 0.4rem;">
+        <!-- Lista de productos calculados -->
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.85rem; margin-top: 0.5rem;">
+        <button class="btn-gradient" style="width: 100%; height: 48px; font-weight: 700; font-size: 0.95rem;" onclick="applyAllSuggestedAndSubmit()">
+          <i data-lucide="check-check" style="width: 18px; height: 18px;"></i> Aplicar Precios Sugeridos y Guardar
+        </button>
+        <button onclick="submitPurchase(true)" style="width: 100%; height: 42px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); color: var(--text-dim); border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.82rem;">
+          Mantener Precios Actuales y Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: DETALLE DE COMPRA (HISTORIAL) -->
   <div class="modal-overlay" id="purchaseDetailModal" onclick="if(event.target === this) closePurchaseDetailModal()">
     <div class="modal-sheet">
@@ -1250,14 +1287,10 @@
 
     async function fetchPendingBadge() {
       try {
-        const res = await fetch('/api/sync/push', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ storeId: 'default' })
-        });
+        const res = await fetch('/api/sync/status?storeId=default');
         const d = await res.json();
         if (d.ok) {
-          const totalPending = (d.pendingChanges?.length || 0) + (d.pendingPurchases?.length || 0) + (d.pendingSuppliers?.length || 0);
+          const totalPending = d.pendingCount || 0;
           const b = document.getElementById('pendingBadge');
           if (b) b.textContent = totalPending;
         }
@@ -1638,14 +1671,18 @@
       if (existing) {
         existing.quantity += 1;
       } else {
+        const cost = Number(p.purchasePrice) || 0;
+        const price = Number(p.price) || 0;
         currentPurchaseCart.push({
           productId: p.id,
           sku: p.sku || '',
           name: p.name || 'Producto',
           currentStock: Number(p.stock) || 0,
           quantity: 1,
-          unitCost: Number(p.purchasePrice) || 0,
-          newPrice: Number(p.price) || 0,
+          unitCost: cost,
+          previousCost: cost,
+          previousPrice: price,
+          newPrice: price,
           newWholesalePrice: Number(p.wholesalePrice) || 0
         });
       }
@@ -1658,6 +1695,12 @@
     function updateCartItem(index, field, value) {
       if (!currentPurchaseCart[index]) return;
       currentPurchaseCart[index][field] = Number(value) || 0;
+      renderPurchaseCart();
+    }
+
+    function applySuggestedPrice(index, price) {
+      if (!currentPurchaseCart[index]) return;
+      currentPurchaseCart[index].newPrice = Number(price) || 0;
       renderPurchaseCart();
     }
 
@@ -1702,6 +1745,27 @@
         const subtotal = (item.quantity * item.unitCost);
         const margin = item.newPrice > 0 ? Math.round(((item.newPrice - item.unitCost) / item.newPrice) * 100) : 0;
 
+        const prevCost = item.previousCost !== undefined ? item.previousCost : item.unitCost;
+        const prevPrice = item.previousPrice !== undefined ? item.previousPrice : item.newPrice;
+        const currentStock = Number(item.currentStock) || 0;
+        const qty = Number(item.quantity) || 1;
+        const currCost = Number(item.unitCost) || 0;
+
+        const hasCostVariation = Math.abs(currCost - prevCost) > 0.01;
+        let variationPct = 0;
+        let suggPrice = item.newPrice;
+        let origMargin = prevPrice > 0 ? (prevPrice - prevCost) / prevPrice : 0.4;
+        if (origMargin <= 0 || origMargin >= 1) origMargin = 0.4;
+
+        if (hasCostVariation && prevCost > 0) {
+          variationPct = (((currCost - prevCost) / prevCost) * 100).toFixed(1);
+          const totalPrev = currentStock * prevCost;
+          const totalNew = qty * currCost;
+          const newAvgCost = (currentStock + qty) > 0 ? (totalPrev + totalNew) / (currentStock + qty) : currCost;
+          suggPrice = Math.ceil(origMargin < 1 ? (newAvgCost / (1 - origMargin)) : newAvgCost * 1.5);
+          item.suggestedPrice = suggPrice;
+        }
+
         return '<div class="cart-item-row">' +
           '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
             '<div>' +
@@ -1713,28 +1777,42 @@
             '</button>' +
           '</div>' +
 
-          '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: center; margin-top: 0.2rem;">' +
+          '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: center; margin-top: 0.35rem;">' +
             '<div>' +
               '<label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Piezas</label>' +
               '<div class="cart-item-stepper">' +
                 '<button class="stepper-btn" onclick="changeCartItemQty(' + idx + ', -1)">-</button>' +
-                '<input type="number" value="' + item.quantity + '" min="1" onchange="updateCartItem(' + idx + ', \'quantity\', this.value)" style="width: 44px; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; text-align: center; border-radius: 6px; font-weight: 700;">' +
+                '<input type="number" value="' + item.quantity + '" min="1" oninput="updateCartItem(' + idx + ', \'quantity\', this.value)" style="width: 44px; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; text-align: center; border-radius: 6px; font-weight: 700;">' +
                 '<button class="stepper-btn" onclick="changeCartItemQty(' + idx + ', 1)">+</button>' +
               '</div>' +
             '</div>' +
 
             '<div>' +
               '<label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Costo Unit. ($)</label>' +
-              '<input type="number" step="0.01" value="' + item.unitCost + '" onchange="updateCartItem(' + idx + ', \'unitCost\', this.value)" style="width: 100%; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 0 0.5rem; font-weight: 700; font-size: 0.88rem;">' +
+              '<input type="number" step="0.01" value="' + item.unitCost + '" oninput="updateCartItem(' + idx + ', \'unitCost\', this.value)" style="width: 100%; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid ' + (hasCostVariation ? '#fbbf24' : 'rgba(255,255,255,0.2)') + '; color: white; border-radius: 6px; padding: 0 0.5rem; font-weight: 700; font-size: 0.88rem;">' +
             '</div>' +
 
             '<div>' +
               '<label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Precio Venta ($)</label>' +
-              '<input type="number" step="0.01" value="' + item.newPrice + '" onchange="updateCartItem(' + idx + ', \'newPrice\', this.value)" style="width: 100%; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 0 0.5rem; font-weight: 700; font-size: 0.88rem;">' +
+              '<input type="number" step="0.01" value="' + item.newPrice + '" oninput="updateCartItem(' + idx + ', \'newPrice\', this.value)" style="width: 100%; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 0 0.5rem; font-weight: 700; font-size: 0.88rem;">' +
             '</div>' +
           '</div>' +
 
-          '<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.35rem; font-size: 0.78rem;">' +
+          (hasCostVariation ? (
+            '<div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 0.45rem 0.6rem; margin-top: 0.4rem; font-size: 0.74rem;">' +
+              '<div style="color: #fbbf24; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">' +
+                '<span>⚠️ Costo varió: $' + prevCost.toFixed(2) + ' ➔ $' + currCost.toFixed(2) + ' (' + (Number(variationPct) > 0 ? '+' : '') + variationPct + '%)</span>' +
+              '</div>' +
+              '<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem;">' +
+                '<span style="color: var(--text-dim);">Sugerido (' + Math.round(origMargin * 100) + '% margen): <b style="color: #4ade80;">$' + suggPrice + '</b></span>' +
+                '<button type="button" onclick="applySuggestedPrice(' + idx + ', ' + suggPrice + ')" style="background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem; cursor: pointer;">' +
+                  'Aplicar $' + suggPrice +
+                '</button>' +
+              '</div>' +
+            '</div>'
+          ) : '') +
+
+          '<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.35rem; margin-top: 0.3rem; font-size: 0.78rem;">' +
             '<span style="color: #c084fc; font-weight: 600;">Margen: ' + margin + '%</span>' +
             '<span style="color: #4ade80; font-weight: 700;">Subtotal: $' + subtotal.toFixed(2) + '</span>' +
           '</div>' +
@@ -1744,7 +1822,46 @@
       lucide.createIcons();
     }
 
-    async function submitPurchase() {
+    function showCostReviewModal(unadjustedItems) {
+      const container = document.getElementById('costReviewItemsList');
+      if (!container) return;
+
+      container.innerHTML = unadjustedItems.map(it => {
+        const prevCost = it.previousCost || 0;
+        const currCost = it.unitCost || 0;
+        const prevPrice = it.previousPrice || 0;
+        const sugg = it.suggestedPrice || it.newPrice;
+        const varPct = prevCost > 0 ? (((currCost - prevCost) / prevCost) * 100).toFixed(1) : '+100';
+
+        return '<div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.65rem 0.85rem;">' +
+          '<div style="font-weight: 700; font-size: 0.9rem; color: white;">' + it.name + '</div>' +
+          '<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem;">' +
+            '<span>Costo: $' + prevCost.toFixed(2) + ' ➔ <b style="color: #fbbf24;">$' + currCost.toFixed(2) + '</b> (' + (Number(varPct) > 0 ? '+' : '') + varPct + '%)</span>' +
+            '<span>Precio: $' + prevPrice.toFixed(2) + ' ➔ <b style="color: #4ade80;">$' + sugg + '</b></span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      document.getElementById('costReviewModal').classList.add('open');
+      lucide.createIcons();
+    }
+
+    function closeCostReviewModal() {
+      const m = document.getElementById('costReviewModal');
+      if (m) m.classList.remove('open');
+    }
+
+    function applyAllSuggestedAndSubmit() {
+      currentPurchaseCart.forEach(it => {
+        if (it.suggestedPrice) {
+          it.newPrice = it.suggestedPrice;
+        }
+      });
+      closeCostReviewModal();
+      submitPurchase(true);
+    }
+
+    async function submitPurchase(force = false) {
       const supplier = (document.getElementById('purchaseSupplierSelect').value || '').trim();
       const folio = (document.getElementById('purchaseFolioInput').value || '').trim();
 
@@ -1758,6 +1875,22 @@
         return;
       }
 
+      // Validar si hubo variaciones de costo sin ajustar precio de venta
+      if (!force) {
+        const unadjusted = currentPurchaseCart.filter(it => {
+          const prevCost = it.previousCost || 0;
+          const currCost = it.unitCost || 0;
+          const prevPrice = it.previousPrice || 0;
+          const currPrice = it.newPrice || 0;
+          return Math.abs(currCost - prevCost) > 0.01 && Math.abs(currPrice - prevPrice) < 0.01;
+        });
+
+        if (unadjusted.length > 0) {
+          showCostReviewModal(unadjusted);
+          return;
+        }
+      }
+
       const total = currentPurchaseCart.reduce((sum, it) => sum + (it.quantity * it.unitCost), 0);
 
       const purchasePayload = {
@@ -1768,15 +1901,33 @@
         iva: 0,
         total: total,
         status: 'active',
-        items: currentPurchaseCart.map(it => ({
-          productId: it.productId,
-          sku: it.sku,
-          name: it.name,
-          quantity: it.quantity,
-          unitCost: it.unitCost,
-          newPrice: it.newPrice,
-          newWholesalePrice: it.newWholesalePrice
-        }))
+        items: currentPurchaseCart.map(it => {
+          const prevCost = Number(it.previousCost) || Number(it.unitCost) || 0;
+          const prevPrice = Number(it.previousPrice) || Number(it.newPrice) || 0;
+          const currentStock = Number(it.currentStock) || 0;
+          const qty = Number(it.quantity) || 1;
+          const currCost = Number(it.unitCost) || 0;
+          let margin = prevPrice > 0 ? (prevPrice - prevCost) / prevPrice : 0.4;
+          if (margin <= 0 || margin >= 1) margin = 0.4;
+          const totalPrev = currentStock * prevCost;
+          const totalNew = qty * currCost;
+          const newAvgCost = (currentStock + qty) > 0 ? (totalPrev + totalNew) / (currentStock + qty) : currCost;
+          const suggPrice = Math.ceil(margin < 1 ? newAvgCost / (1 - margin) : newAvgCost * 1.5);
+
+          return {
+            productId: Number(it.productId) || it.productId,
+            sku: it.sku || '',
+            name: it.name,
+            quantity: qty,
+            unitCost: currCost,
+            previousCost: prevCost,
+            previousPrice: prevPrice,
+            newAverageCost: Number(newAvgCost.toFixed(2)),
+            suggestedPrice: suggPrice,
+            newPrice: Number(it.newPrice) || suggPrice,
+            newWholesalePrice: Number(it.newWholesalePrice) || 0
+          };
+        })
       };
 
       try {
@@ -1789,7 +1940,8 @@
         if (data.ok) {
           showToast('✅ Compra guardada y stock surtido');
           closeNewPurchaseModal();
-          refreshData();
+          closeCostReviewModal();
+          await refreshData();
         } else {
           alert('Error: ' + (data.error || 'No se pudo guardar la compra.'));
         }
@@ -1797,6 +1949,7 @@
         alert('Error de conexión al guardar la compra.');
       }
     }
+
 
     // --- MÓDULO 4: CAJA HOY ---
     function renderTodaySales(summary) {
