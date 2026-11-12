@@ -205,7 +205,18 @@ app.post('/api/sync/adjust', async (req, res) => {
 
     const store = loadCloudStore();
     if (!store.stores[storeId]) {
-      return res.status(404).json({ ok: false, error: 'Tienda no conectada en la nube. Abre VelvetPOS Desktop primero.' });
+      store.stores[storeId] = {
+        businessName: 'Velvet',
+        machineId: '',
+        lastSyncAt: new Date().toISOString(),
+        products: [],
+        suppliers: [],
+        purchases: [],
+        todaySummary: {},
+        pendingChanges: [],
+        pendingPurchases: [],
+        pendingSuppliers: []
+      };
     }
 
     const currentStore = store.stores[storeId];
@@ -265,7 +276,18 @@ app.post('/api/sync/purchase', (req, res) => {
 
     const store = loadCloudStore();
     if (!store.stores[storeId]) {
-      return res.status(404).json({ ok: false, error: 'Tienda no inicializada en la nube.' });
+      store.stores[storeId] = {
+        businessName: 'Velvet',
+        machineId: '',
+        lastSyncAt: new Date().toISOString(),
+        products: [],
+        suppliers: [],
+        purchases: [],
+        todaySummary: {},
+        pendingChanges: [],
+        pendingPurchases: [],
+        pendingSuppliers: []
+      };
     }
 
     const currentStore = store.stores[storeId];
@@ -329,7 +351,18 @@ app.post('/api/sync/supplier', (req, res) => {
 
     const store = loadCloudStore();
     if (!store.stores[storeId]) {
-      return res.status(404).json({ ok: false, error: 'Tienda no inicializada en la nube.' });
+      store.stores[storeId] = {
+        businessName: 'Velvet',
+        machineId: '',
+        lastSyncAt: new Date().toISOString(),
+        products: [],
+        suppliers: [],
+        purchases: [],
+        todaySummary: {},
+        pendingChanges: [],
+        pendingPurchases: [],
+        pendingSuppliers: []
+      };
     }
 
     const currentStore = store.stores[storeId];
