@@ -2,40 +2,42 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Velvet Móvil — Dueño & Inventario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Velvet Móvil — Dueño, Compras & Proveedores</title>
   
   <link rel="manifest" href="/movil/manifest.json">
   <meta name="theme-color" content="#0d0b14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Velvet Móvil">
+  <link rel="icon" type="image/png" href="/movil/icon-192.png">
   <link rel="apple-touch-icon" href="/movil/icon-192.png">
 
-  <!-- Google Fonts: Outfit & Inter -->
+  <!-- Tipografías Velvet: Outfit e Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <!-- Lucide Icons -->
+  <!-- Iconos Lucide y Lector de Códigos de Barra HTML5 -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- HTML5-QRCode Scanner -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     :root {
       --bg: #0d0b14;
-      --card-bg: rgba(26, 22, 38, 0.75);
-      --card-border: rgba(157, 80, 187, 0.25);
+      --bg-surface: #141021;
+      --card-bg: rgba(26, 22, 38, 0.7);
+      --card-border: rgba(157, 80, 187, 0.2);
       --accent: #9d50bb;
+      --accent-light: #be75e1;
       --accent-glow: rgba(157, 80, 187, 0.4);
       --accent-gradient: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%);
-      --text: #ffffff;
-      --text-dim: #94a3b8;
-      --text-muted: #64748b;
+      --emerald: #10b981;
+      --text-main: #f8f7f9;
+      --text-dim: #a099b0;
+      --text-muted: #6b647a;
+      --danger: #ef4444;
       --success: #22c55e;
       --warning: #f59e0b;
-      --danger: #ef4444;
       --font-title: 'Outfit', sans-serif;
       --font-body: 'Inter', sans-serif;
     }
@@ -45,23 +47,24 @@
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    input, textarea, select {
+      user-select: auto;
     }
 
     body {
       background-color: var(--bg);
-      background-image: 
-        radial-gradient(circle at 10% 10%, rgba(157, 80, 187, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(110, 72, 170, 0.15) 0%, transparent 40%);
-      background-attachment: fixed;
-      color: var(--text);
+      color: var(--text-main);
       font-family: var(--font-body);
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
+      padding-bottom: 72px; /* Espacio para barra de navegación inferior */
     }
 
-    /* Estilos Glassmorphism */
+    /* ESTILO DARK GLASSMORPHISM */
     .glass {
       background: var(--card-bg);
       backdrop-filter: blur(16px);
@@ -70,23 +73,429 @@
       border-radius: 16px;
     }
 
-    .btn-gradient {
+    /* HEADER SUPERIOR */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(13, 11, 20, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       background: var(--accent-gradient);
-      color: white;
-      border: none;
-      font-weight: 700;
-      border-radius: 12px;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: var(--font-title);
+      font-weight: 900;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* BARRA DE NAVEGACIÓN INFERIOR (BOTTOM TABS) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(16, 12, 26, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(157, 80, 187, 0.25);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      z-index: 45;
+      padding: 0 0.25rem;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-btn.active {
+      color: #e2bbfd;
+    }
+
+    .nav-btn.active i {
+      color: #be75e1;
+      transform: translateY(-2px);
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    main {
+      flex: 1;
+      padding: 1rem;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* BOTONES Y CAMPOS */
+    .btn-gradient {
+      background: var(--accent-gradient);
+      border: none;
+      color: white;
+      font-family: var(--font-title);
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       gap: 0.5rem;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
       box-shadow: 0 4px 15px var(--accent-glow);
     }
 
     .btn-gradient:active {
       transform: scale(0.97);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      font-family: var(--font-title);
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+    }
+
+    .btn-secondary:active {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* BUSCADOR */
+    .search-wrap {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .search-box {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 46px;
+      padding: 0 1rem 0 2.6rem;
+      border-radius: 14px;
+      background: rgba(26, 22, 38, 0.85);
+      border: 1px solid var(--card-border);
+      color: white;
+      font-size: 0.92rem;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .search-icon-pos {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    /* CHIPS DE FILTRO */
+    .chips-scroll {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      scrollbar-width: none;
+    }
+
+    .chips-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-chip {
+      padding: 0.4rem 0.85rem;
+      border-radius: 100px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .filter-chip.active {
+      background: rgba(157, 80, 187, 0.25);
+      border-color: var(--accent);
+      color: #e2bbfd;
+    }
+
+    /* TARJETAS DE PRODUCTO */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .product-card {
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .product-card:active {
+      transform: scale(0.985);
+      background: rgba(40, 32, 60, 0.85);
+    }
+
+    .prod-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .prod-title {
+      font-family: var(--font-title);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .badge-stock {
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .stock-ok { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .stock-low { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .stock-out { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .prod-prices-row {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.5rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+    }
+
+    .price-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-col span:first-child {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .price-col span:last-child {
+      font-weight: 700;
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    /* TARJETAS DE PROVEEDORES */
+    .supplier-card {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      border-left: 3px solid var(--accent);
+    }
+
+    .sup-actions-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 100px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+    }
+
+    .btn-pill-wa {
+      background: rgba(37, 211, 102, 0.15);
+      color: #4ade80;
+      border-color: rgba(37, 211, 102, 0.4);
+    }
+
+    .btn-pill-call {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-pill-buy {
+      background: rgba(157, 80, 187, 0.25);
+      color: #e2bbfd;
+      border-color: var(--accent);
+      margin-left: auto;
+    }
+
+    /* TARJETAS DE COMPRAS */
+    .purchase-card {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .purchase-card:active {
+      transform: scale(0.985);
+      background: rgba(40, 32, 60, 0.85);
+    }
+
+    /* FORMULARIOS Y MODALES BOTTOM SHEET */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 60;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: #141021;
+      border-top: 1px solid var(--accent);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 650px;
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 1.25rem 1.25rem 2rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .form-group label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .form-input {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 0.7rem 0.9rem;
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* TABLA DE PARTIDAS DE COMPRA */
+    .cart-item-row {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .cart-item-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .stepper-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
     }
 
     /* PANTALLA DE BLOQUEO POR PIN */
@@ -117,7 +526,7 @@
     .pin-dots {
       display: flex;
       gap: 1rem;
-      margin: 1.5rem 0 2rem 0;
+      margin: 1.25rem 0 1rem 0;
     }
 
     .pin-dot {
@@ -151,325 +560,29 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: white;
       font-size: 1.6rem;
-      font-family: var(--font-title);
-      font-weight: 600;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto;
-      cursor: pointer;
-      transition: all 0.15s ease;
     }
 
     .key-btn:active {
       background: rgba(157, 80, 187, 0.3);
-      transform: scale(0.92);
+      transform: scale(0.95);
     }
 
-    /* APP SHELL */
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(13, 11, 20, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
     }
-
-    .nav-tabs {
-      display: flex;
-      gap: 0.5rem;
-      padding: 0.75rem 1rem 0 1rem;
+    .shake {
+      animation: shake 0.35s ease-in-out;
     }
-
-    .tab-btn {
-      flex: 1;
-      padding: 0.6rem 0.5rem;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-dim);
-      font-weight: 600;
-      font-size: 0.82rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      background: var(--accent-gradient);
-      color: white;
-      border-color: transparent;
-      box-shadow: 0 4px 15px var(--accent-glow);
-    }
-
-    /* CONTENEDOR PRINCIPAL */
-    main {
-      flex: 1;
-      padding: 1rem;
-      max-width: 650px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    /* BÚSQUEDA Y CÁMARA */
-    .search-bar-wrap {
-      display: flex;
-      gap: 0.6rem;
-      margin-bottom: 0.85rem;
-    }
-
-    .search-input-box {
-      flex: 1;
-      position: relative;
-    }
-
-    .search-input-box input {
-      width: 100%;
-      height: 48px;
-      padding: 0 1rem 0 2.75rem;
-      border-radius: 14px;
-      background: rgba(26, 22, 38, 0.8);
-      border: 1px solid var(--card-border);
-      color: white;
-      font-size: 0.95rem;
-      outline: none;
-    }
-
-    .search-input-box input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
-
-    .search-icon-pos {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-dim);
-      pointer-events: none;
-    }
-
-    .scan-btn {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      flex-shrink: 0;
-    }
-
-    /* CATEGORÍAS CHIPS */
-    .chips-scroll {
-      display: flex;
-      gap: 0.5rem;
-      overflow-x: auto;
-      padding-bottom: 0.5rem;
-      margin-bottom: 1rem;
-      scrollbar-width: none;
-    }
-
-    .chips-scroll::-webkit-scrollbar {
-      display: none;
-    }
-
-    .filter-chip {
-      padding: 0.4rem 0.8rem;
-      border-radius: 100px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: var(--text-dim);
-      font-size: 0.78rem;
-      font-weight: 600;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    .filter-chip.active {
-      background: rgba(157, 80, 187, 0.25);
-      border-color: var(--accent);
-      color: #e2bbfd;
-    }
-
-    /* TARJETAS DE PRODUCTO */
-    .product-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .product-card {
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .product-card:active {
-      transform: scale(0.98);
-      background: rgba(40, 32, 60, 0.85);
-    }
-
-    .prod-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-
-    .prod-title {
-      font-family: var(--font-title);
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1.3;
-    }
-
-    .badge-stock {
-      padding: 0.25rem 0.65rem;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .stock-ok {
-      background: rgba(34, 197, 94, 0.15);
-      color: #4ade80;
-      border: 1px solid rgba(34, 197, 94, 0.3);
-    }
-
-    .stock-low {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .stock-out {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .prod-meta {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-    }
-
-    .prod-prices-row {
-      display: flex;
-      justify-content: space-between;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 0.6rem 0.8rem;
-      border-radius: 10px;
-      font-size: 0.82rem;
-      margin-top: 0.2rem;
-    }
-
-    .price-col {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .price-col span:first-child {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .price-col span:last-child {
-      font-weight: 700;
-      color: white;
-      font-size: 0.92rem;
-    }
-
-    /* MODAL DE AJUSTE / SURTIDO */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(8px);
-      z-index: 50;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-    }
-
-    .modal-overlay.open {
-      display: flex;
-    }
-
-    .modal-sheet {
-      background: #141021;
-      border-top: 1px solid var(--accent);
-      border-radius: 24px 24px 0 0;
-      width: 100%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-
-    .modal-sheet-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-sheet-header h3 {
-      font-family: var(--font-title);
-      font-size: 1.25rem;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    .form-group label {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      font-weight: 600;
-    }
-
-    .form-input {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 0.75rem 1rem;
-      color: white;
-      font-size: 1rem;
-      font-weight: 600;
-      outline: none;
-    }
-
-    .form-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
+    .pin-dot.error {
+      background: var(--danger) !important;
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6) !important;
     }
 
     /* CAMARA SCANNER OVERLAY */
@@ -493,10 +606,10 @@
       max-width: 450px;
     }
 
-    /* TOAST NOTIFICACION */
+    /* TOAST */
     #toast {
       position: fixed;
-      bottom: 2rem;
+      bottom: 5rem;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
       background: #22c55e;
@@ -516,22 +629,7 @@
     #toast.show {
       transform: translateX(-50%) translateY(0);
     }
-  
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-8px); }
-      40%, 80% { transform: translateX(8px); }
-    }
-    .shake {
-      animation: shake 0.35s ease-in-out;
-    }
-    .pin-dot.error {
-      background: var(--danger) !important;
-      border-color: var(--danger) !important;
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6) !important;
-    }
-  
-    </style>
+  </style>
 </head>
 <body>
 
@@ -570,48 +668,37 @@
   <!-- HEADER -->
   <header>
     <div style="display: flex; align-items: center; gap: 0.6rem;">
-      <div style="width: 34px; height: 34px; border-radius: 10px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-family: var(--font-title); font-weight: 800; font-size: 1.2rem;">
-        V
-      </div>
+      <div class="brand-badge">V</div>
       <div>
         <h1 id="shopNameHeader" style="font-family: var(--font-title); font-size: 1.05rem; font-weight: 700;">VelvetPOS</h1>
         <small id="syncStatusBadge" style="color: var(--success); font-size: 0.72rem; font-weight: 600;">● En Línea</small>
       </div>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <button onclick="refreshData()" class="glass" style="padding: 0.5rem; color: white; cursor: pointer; border: none; display: flex; align-items: center;">
-        <i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i>
+    <div style="display: flex; align-items: center; gap: 0.4rem;">
+      <button onclick="openPendingChangesModal()" class="glass" style="padding: 0.45rem 0.7rem; color: #e2bbfd; cursor: pointer; border: 1px solid var(--accent); display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 700;">
+        <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+        <span id="pendingBadge">0</span>
       </button>
-      <button onclick="lockApp()" class="glass" style="padding: 0.5rem; color: var(--danger); cursor: pointer; border: none; display: flex; align-items: center;">
-        <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+      <button onclick="refreshData()" class="glass" style="padding: 0.5rem; color: white; cursor: pointer; border: none; display: flex; align-items: center;" title="Actualizar">
+        <i data-lucide="refresh-cw" style="width: 17px; height: 17px;"></i>
+      </button>
+      <button onclick="lockApp()" class="glass" style="padding: 0.5rem; color: var(--danger); cursor: pointer; border: none; display: flex; align-items: center;" title="Bloquear">
+        <i data-lucide="lock" style="width: 17px; height: 17px;"></i>
       </button>
     </div>
   </header>
 
-  <!-- NAVEGACIÓN POR PESTAÑAS -->
-  <div class="nav-tabs">
-    <button class="tab-btn active" id="tabBtnInventory" onclick="switchTab('inventory')">
-      <i data-lucide="package" style="width: 16px; height: 16px;"></i> Inventario
-    </button>
-    <button class="tab-btn" id="tabBtnSales" onclick="switchTab('sales')">
-      <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i> Caja Hoy
-    </button>
-    <button class="tab-btn" id="tabBtnPending" onclick="switchTab('pending')">
-      <i data-lucide="clock" style="width: 16px; height: 16px;"></i> Cambios (<span id="pendingCount">0</span>)
-    </button>
-  </div>
-
   <!-- CONTENIDO PRINCIPAL -->
   <main>
-    <!-- VISTA INVENTARIO -->
+    <!-- 1. VISTA INVENTARIO -->
     <div id="viewInventory">
-      <div class="search-bar-wrap">
-        <div class="search-input-box">
+      <div class="search-wrap">
+        <div class="search-box">
           <i data-lucide="search" class="search-icon-pos" style="width: 18px; height: 18px;"></i>
           <input type="text" id="searchInput" placeholder="Buscar por nombre, SKU o código..." oninput="handleSearch()">
         </div>
-        <button class="btn-gradient scan-btn" onclick="startCameraScanner()" title="Escanear Código de Barras">
+        <button class="btn-gradient" style="width: 48px; height: 46px; border-radius: 14px;" onclick="startCameraScanner('inventory')" title="Escanear Código de Barras">
           <i data-lucide="camera" style="width: 22px; height: 22px;"></i>
         </button>
       </div>
@@ -623,18 +710,70 @@
       </div>
 
       <div class="product-list" id="productList">
-        <!-- Render dinámico de productos -->
         <div style="text-align: center; padding: 3rem 1rem; color: var(--text-dim);">
           <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; margin: 0 auto 0.5rem auto;"></i>
-          <p>Cargando inventario de la tienda...</p>
+          <p>Cargando inventario...</p>
         </div>
       </div>
     </div>
 
-    <!-- VISTA CAJA HOY -->
+    <!-- 2. VISTA COMPRAS Y SURTIDOS -->
+    <div id="viewPurchases" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h2 style="font-family: var(--font-title); font-size: 1.25rem; font-weight: 800;">Compras & Surtidos</h2>
+          <p style="font-size: 0.78rem; color: var(--text-dim);">Historial y registro directo de facturas</p>
+        </div>
+        <button class="btn-gradient" style="padding: 0.65rem 1rem; font-size: 0.85rem;" onclick="openNewPurchaseModal()">
+          <i data-lucide="plus-circle" style="width: 17px; height: 17px;"></i> Nueva Compra
+        </button>
+      </div>
+
+      <!-- Resumen de compras -->
+      <div class="glass" style="padding: 1rem; display: flex; justify-content: space-between; margin-bottom: 1rem;">
+        <div>
+          <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Inversión Reciente</span>
+          <div id="purchasesTotalSum" style="font-size: 1.4rem; font-weight: 800; color: #4ade80;">$0.00</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Facturas / Remisiones</span>
+          <div id="purchasesCountLabel" style="font-size: 1.4rem; font-weight: 800; color: white;">0</div>
+        </div>
+      </div>
+
+      <div id="purchasesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Render de compras -->
+      </div>
+    </div>
+
+    <!-- 3. VISTA PROVEEDORES -->
+    <div id="viewSuppliers" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h2 style="font-family: var(--font-title); font-size: 1.25rem; font-weight: 800;">Proveedores</h2>
+          <p style="font-size: 0.78rem; color: var(--text-dim);">Directorio comercial y contacto rápido</p>
+        </div>
+        <button class="btn-gradient" style="padding: 0.65rem 1rem; font-size: 0.85rem;" onclick="openSupplierModal()">
+          <i data-lucide="user-plus" style="width: 17px; height: 17px;"></i> Nuevo Proveedor
+        </button>
+      </div>
+
+      <div class="search-wrap">
+        <div class="search-box">
+          <i data-lucide="search" class="search-icon-pos" style="width: 18px; height: 18px;"></i>
+          <input type="text" id="supplierSearchInput" placeholder="Buscar por empresa o contacto..." oninput="handleSupplierSearch()">
+        </div>
+      </div>
+
+      <div id="suppliersList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Render de proveedores -->
+      </div>
+    </div>
+
+    <!-- 4. VISTA CAJA HOY -->
     <div id="viewSales" style="display: none;">
       <div class="glass" style="padding: 1.25rem; margin-bottom: 1rem;">
-        <span style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">Ventas Acumuladas Hoy</span>
+        <span style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Ventas Acumuladas Hoy</span>
         <h2 id="todayTotalSales" style="font-family: var(--font-title); font-size: 2.2rem; font-weight: 800; color: #4ade80; margin: 0.35rem 0;">$0.00</h2>
         <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-dim);">
           <span>🧾 <b id="todayTicketsCount" style="color: white;">0</b> tickets</span>
@@ -643,7 +782,7 @@
       </div>
 
       <div class="glass" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
-        <h3 style="font-family: var(--font-title); font-size: 1rem;">Desglose por Método</h3>
+        <h3 style="font-family: var(--font-title); font-size: 1rem; font-weight: 700;">Desglose por Método</h3>
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
           <span style="color: var(--text-dim);">💵 Efectivo</span>
           <strong id="todayCash">$0.00</strong>
@@ -658,25 +797,192 @@
         </div>
       </div>
     </div>
-
-    <!-- VISTA CAMBIOS PENDIENTES -->
-    <div id="viewPending" style="display: none;">
-      <div style="margin-bottom: 0.75rem;">
-        <h3 style="font-family: var(--font-title); font-size: 1.1rem;">Ajustes en Cola</h3>
-        <p style="font-size: 0.78rem; color: var(--text-dim);">Estos cambios se aplicarán en la PC de la tienda en cuanto se conecte.</p>
-      </div>
-      <div id="pendingList" style="display: flex; flex-direction: column; gap: 0.6rem;">
-        <!-- Lista de cambios pendientes -->
-      </div>
-    </div>
   </main>
 
-  <!-- MODAL DE AJUSTE / SURTIDO RÁPIDO -->
+  <!-- BARRA DE NAVEGACIÓN INFERIOR (BOTTOM TABS) -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="navBtnInventory" onclick="switchTab('inventory')">
+      <i data-lucide="package" style="width: 20px; height: 20px;"></i>
+      <span>Inventario</span>
+    </button>
+    <button class="nav-btn" id="navBtnPurchases" onclick="switchTab('purchases')">
+      <i data-lucide="shopping-cart" style="width: 20px; height: 20px;"></i>
+      <span>Compras</span>
+    </button>
+    <button class="nav-btn" id="navBtnSuppliers" onclick="switchTab('suppliers')">
+      <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+      <span>Proveedores</span>
+    </button>
+    <button class="nav-btn" id="navBtnSales" onclick="switchTab('sales')">
+      <i data-lucide="bar-chart-3" style="width: 20px; height: 20px;"></i>
+      <span>Caja Hoy</span>
+    </button>
+  </nav>
+
+  <!-- ========================================================================= -->
+  <!-- MODALES DE OPERACIÓN                                                      -->
+  <!-- ========================================================================= -->
+
+  <!-- MODAL: REGISTRAR NUEVA COMPRA / SURTIDO -->
+  <div class="modal-overlay" id="newPurchaseModal" onclick="if(event.target === this) closeNewPurchaseModal()">
+    <div class="modal-sheet">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="font-family: var(--font-title); font-size: 1.2rem; font-weight: 800;">🛒 Registrar Compra</h3>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Ingresa factura o surtido de mercancía</span>
+        </div>
+        <button onclick="closeNewPurchaseModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <!-- Cabecera de compra: Proveedor y Folio -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="form-group">
+          <label>Proveedor *</label>
+          <select id="purchaseSupplierSelect" class="form-input" style="font-size: 0.88rem; padding: 0.65rem 0.75rem;">
+            <option value="">Selecciona proveedor...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Folio / Factura / Nota</label>
+          <input type="text" id="purchaseFolioInput" class="form-input" placeholder="Ej. FAC-1049" style="font-size: 0.88rem; padding: 0.65rem 0.75rem;">
+        </div>
+      </div>
+
+      <!-- Buscador y Escáner de productos para la compra -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+        <label style="font-size: 0.78rem; color: var(--text-dim); font-weight: 700; margin-bottom: 0.35rem; display: block;">Agregar Artículos a la Compra</label>
+        <div class="search-wrap" style="margin-bottom: 0.5rem;">
+          <div class="search-box">
+            <i data-lucide="search" class="search-icon-pos" style="width: 16px; height: 16px;"></i>
+            <input type="text" id="purchaseSearchProduct" placeholder="Buscar por nombre, SKU o código..." oninput="handlePurchaseProductSearch()" style="height: 42px;">
+          </div>
+          <button class="btn-gradient" style="width: 44px; height: 42px; border-radius: 12px;" onclick="startCameraScanner('purchase')" title="Escanear Producto">
+            <i data-lucide="camera" style="width: 20px; height: 20px;"></i>
+          </button>
+        </div>
+
+        <!-- Resultados desplegables de búsqueda -->
+        <div id="purchaseSearchResults" style="display: none; max-height: 180px; overflow-y: auto; background: rgba(13, 11, 20, 0.95); border: 1px solid var(--accent); border-radius: 12px; margin-bottom: 0.75rem;">
+          <!-- Items desplegables -->
+        </div>
+      </div>
+
+      <!-- Lista de partidas agregadas -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase;">Partidas en el Ticket (<span id="purchaseItemsCount">0</span>)</span>
+          <span id="purchaseUnitsSum" style="font-size: 0.78rem; color: #be75e1; font-weight: 700;">0 pzas</span>
+        </div>
+        <div id="purchaseCartList" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 320px; overflow-y: auto;">
+          <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+            No has agregado productos. Busca arriba o escanea con la cámara.
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie de Compra con Totales y Guardar -->
+      <div style="border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 0.85rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.9rem; color: var(--text-dim);">TOTAL A PAGAR:</span>
+          <span id="purchaseGrandTotal" style="font-family: var(--font-title); font-size: 1.6rem; font-weight: 900; color: #4ade80;">$0.00</span>
+        </div>
+        <button class="btn-gradient" style="width: 100%; height: 50px; font-size: 1.05rem;" onclick="submitPurchase()">
+          <i data-lucide="check" style="width: 20px; height: 20px;"></i> Guardar Compra y Surtir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALLE DE COMPRA (HISTORIAL) -->
+  <div class="modal-overlay" id="purchaseDetailModal" onclick="if(event.target === this) closePurchaseDetailModal()">
+    <div class="modal-sheet">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 id="detailPurchaseSupplier" style="font-family: var(--font-title); font-size: 1.2rem; font-weight: 800;">Proveedor</h3>
+          <span id="detailPurchaseDate" style="font-size: 0.78rem; color: var(--text-dim);">Fecha</span>
+        </div>
+        <button onclick="closePurchaseDetailModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <div class="glass" style="padding: 0.75rem 1rem; display: flex; justify-content: space-between;">
+        <div>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Folio</span>
+          <div id="detailPurchaseFolio" style="font-weight: 700; color: white;">---</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Total Pagado</span>
+          <div id="detailPurchaseTotal" style="font-size: 1.25rem; font-weight: 800; color: #4ade80;">$0.00</div>
+        </div>
+      </div>
+
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Artículos Adquiridos</div>
+      <div id="detailPurchaseItemsList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 350px; overflow-y: auto;">
+        <!-- Lista de productos -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR / EDITAR PROVEEDOR -->
+  <div class="modal-overlay" id="supplierModal" onclick="if(event.target === this) closeSupplierModal()">
+    <div class="modal-sheet">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 id="supplierModalTitle" style="font-family: var(--font-title); font-size: 1.2rem; font-weight: 800;">Nuevo Proveedor</h3>
+        <button onclick="closeSupplierModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="inputSupId">
+
+      <div class="form-group">
+        <label>Nombre de la Empresa o Proveedor *</label>
+        <input type="text" id="inputSupName" class="form-input" placeholder="Ej. Distribuidora Textil del Norte">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="form-group">
+          <label>Contacto / Vendedor</label>
+          <input type="text" id="inputSupContact" class="form-input" placeholder="Ej. Lic. Roberto Garza">
+        </div>
+        <div class="form-group">
+          <label>Teléfono / WhatsApp</label>
+          <input type="tel" id="inputSupPhone" class="form-input" placeholder="Ej. 8112345678">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Correo Electrónico</label>
+        <input type="email" id="inputSupEmail" class="form-input" placeholder="contacto@proveedor.com">
+      </div>
+
+      <div class="form-group">
+        <label>Dirección / Sucursal</label>
+        <input type="text" id="inputSupAddress" class="form-input" placeholder="Calle, Número y Colonia...">
+      </div>
+
+      <div class="form-group">
+        <label>Notas de Entrega (Días de visita, condiciones)</label>
+        <input type="text" id="inputSupNotes" class="form-input" placeholder="Ej. Surtido lunes y jueves, pedido mínimo 10 pzas">
+      </div>
+
+      <div style="margin-top: 0.5rem;">
+        <button class="btn-gradient" style="width: 100%; height: 48px; font-size: 1rem;" onclick="submitSupplier()">
+          <i data-lucide="save" style="width: 18px; height: 18px;"></i> Guardar Proveedor
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AJUSTE RÁPIDO DE PRODUCTO INDIVIDUAL -->
   <div class="modal-overlay" id="adjustModal" onclick="if(event.target === this) closeAdjustModal()">
     <div class="modal-sheet">
-      <div class="modal-sheet-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h3 id="modalProdName">Producto</h3>
+          <h3 id="modalProdName" style="font-family: var(--font-title); font-size: 1.15rem; font-weight: 800;">Producto</h3>
           <span id="modalProdSku" style="font-size: 0.78rem; color: var(--text-dim);">SKU: ---</span>
         </div>
         <button onclick="closeAdjustModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
@@ -687,45 +993,43 @@
       <!-- Resumen actual -->
       <div class="glass" style="padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3);">
         <div>
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Stock Actual</span>
-          <div id="modalCurrentStock" style="font-size: 1.25rem; font-weight: 800; color: #4ade80;">0 pzas</div>
+          <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Stock Actual</span>
+          <div id="modalCurrentStock" style="font-size: 1.15rem; font-weight: 800; color: #4ade80;">0 pzas</div>
         </div>
         <div>
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Costo Actual</span>
-          <div id="modalCurrentCost" style="font-size: 1.05rem; font-weight: 700;">$0.00</div>
+          <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Costo Actual</span>
+          <div id="modalCurrentCost" style="font-size: 1rem; font-weight: 700;">$0.00</div>
         </div>
         <div>
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Precio Venta</span>
-          <div id="modalCurrentPrice" style="font-size: 1.05rem; font-weight: 700;">$0.00</div>
+          <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Precio Venta</span>
+          <div id="modalCurrentPrice" style="font-size: 1rem; font-weight: 700;">$0.00</div>
         </div>
       </div>
 
-      <!-- Formulario de Surtido / Modificación -->
       <div style="display: flex; flex-direction: column; gap: 0.85rem;">
         <div class="form-group">
-          <label>📦 ¿Cuántas piezas compraste / entraron? (Suma al stock)</label>
-          <input type="number" id="inputStockAdd" class="form-input" placeholder="+0" oninput="calculatePreview()">
-          <small id="previewNewStock" style="color: #a855f7; font-weight: 600; font-size: 0.78rem;"></small>
+          <label>➕ Piezas a Surtir (+Stock)</label>
+          <input type="number" id="inputStockAdded" class="form-input" placeholder="Ej. 12" min="0" oninput="calculatePreview()">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
-            <label>💵 Nuevo Costo Unitario</label>
-            <input type="number" step="0.01" id="inputPurchasePrice" class="form-input" placeholder="$0.00" oninput="calculatePreview()">
+            <label>Nuevo Costo de Compra ($)</label>
+            <input type="number" step="0.01" id="inputNewCost" class="form-input" placeholder="0.00" oninput="calculatePreview()">
           </div>
           <div class="form-group">
-            <label>🏷️ Precio Venta (Menudeo)</label>
-            <input type="number" step="0.01" id="inputPrice" class="form-input" placeholder="$0.00" oninput="calculatePreview()">
+            <label>Nuevo Precio Menudeo ($)</label>
+            <input type="number" step="0.01" id="inputNewPrice" class="form-input" placeholder="0.00" oninput="calculatePreview()">
           </div>
         </div>
 
         <div class="form-group">
-          <label>🤝 Precio Mayoreo (Opcional)</label>
-          <input type="number" step="0.01" id="inputWholesalePrice" class="form-input" placeholder="$0.00">
+          <label>Nuevo Precio Mayoreo ($ Opcional)</label>
+          <input type="number" step="0.01" id="inputNewWholesale" class="form-input" placeholder="0.00">
         </div>
 
         <div class="form-group">
-          <label>📝 Nota / Proveedor (Ej. 'Central de abastos - Don Pedro')</label>
+          <label>📝 Nota / Proveedor (Ej. 'Compra en centro')</label>
           <input type="text" id="inputNotes" class="form-input" placeholder="Surtido con proveedor...">
         </div>
       </div>
@@ -734,6 +1038,25 @@
         <button class="btn-gradient" style="width: 100%; height: 50px; font-size: 1rem;" onclick="submitAdjustment()">
           <i data-lucide="check" style="width: 20px; height: 20px;"></i> Guardar y Encolar a Tienda
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CAMBIOS EN COLA -->
+  <div class="modal-overlay" id="pendingModal" onclick="if(event.target === this) closePendingModal()">
+    <div class="modal-sheet">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="font-family: var(--font-title); font-size: 1.2rem; font-weight: 800;">Ajustes en Cola</h3>
+          <span style="font-size: 0.78rem; color: var(--text-dim);">Pendientes de sincronizar con la PC de la tienda</span>
+        </div>
+        <button onclick="closePendingModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.3rem;">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+
+      <div id="pendingList" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 400px; overflow-y: auto;">
+        <!-- Lista de cambios -->
       </div>
     </div>
   </div>
@@ -747,7 +1070,7 @@
     </div>
     <div style="color: white; text-align: center; margin-bottom: 1rem;">
       <h3 style="font-family: var(--font-title);">Apunta al Código de Barras</h3>
-      <p style="font-size: 0.8rem; color: var(--text-dim);">Usa la cámara trasera de tu celular</p>
+      <p style="font-size: 0.8rem; color: var(--text-dim);">Usa la cámara de tu celular</p>
     </div>
     <div id="reader"></div>
   </div>
@@ -755,20 +1078,27 @@
   <!-- TOAST NOTIFICACIÓN -->
   <div id="toast">
     <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
-    <span id="toastMsg">Ajuste registrado</span>
+    <span id="toastMsg">Operación exitosa</span>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT DE CONTROL Y LÓGICA DE NEGOCIO                                 -->
+  <!-- ========================================================================= -->
   <script>
-    // --- ESTADO GLOBAL MÓVIL ---
+    // --- ESTADO GLOBAL ---
     let currentPin = '';
     const MASTER_PIN = '2415';
     let allProducts = [];
+    let allSuppliers = [];
+    let allPurchases = [];
     let currentStore = null;
     let selectedCategory = 'ALL';
     let currentSelectedProduct = null;
     let html5QrCode = null;
+    let cameraMode = 'inventory'; // 'inventory' | 'purchase'
+    let currentPurchaseCart = []; // Artículos en la compra actual
 
-    // --- MANEJO DE PIN ---
+    // --- PIN KEYPAD & SEGURIDAD ---
     function pressPin(num) {
       if (currentPin.length < 4) {
         currentPin += num;
@@ -793,20 +1123,25 @@
 
     function updatePinDots() {
       for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById(`dot-${i}`);
-        if (i < currentPin.length) dot.classList.add('filled');
-        else dot.classList.remove('filled');
+        const dot = document.getElementById("dot-" + i);
+        if (dot) {
+          if (i < currentPin.length) dot.classList.add('filled');
+          else {
+            dot.classList.remove('filled');
+            dot.classList.remove('error');
+          }
+        }
       }
     }
 
-        function showPinError(msg) {
+    function showPinError(msg) {
       const errorEl = document.getElementById('pinErrorMsg');
       if (errorEl) errorEl.textContent = msg || 'PIN incorrecto. Intenta de nuevo.';
       const dots = document.querySelector('.pin-dots');
       if (dots) {
         dots.classList.add('shake');
         for (let i = 0; i < 4; i++) {
-          const d = document.getElementById(`dot-${i}`);
+          const d = document.getElementById("dot-" + i);
           if (d) d.classList.add('error');
         }
         setTimeout(() => {
@@ -823,8 +1158,7 @@
 
     function verifyPin() {
       const pin = currentPin.trim();
-      // Acepta el PIN Maestro 2415 o cualquier PIN admin
-      if (pin === MASTER_PIN || pin === '2415' || pin === '1234' || (currentStore && String(currentStore.adminPin) === pin)) {
+      if (pin === MASTER_PIN || pin === '2415' || pin === '1234') {
         sessionStorage.setItem('velvet_auth', 'true');
         const lock = document.getElementById('lockScreen');
         if (lock) {
@@ -842,7 +1176,6 @@
       }
     }
 
-    // Soporte para teclado físico (PC/Laptop)
     window.addEventListener('keydown', (e) => {
       const lock = document.getElementById('lockScreen');
       if (lock && lock.style.display !== 'none') {
@@ -856,7 +1189,6 @@
       }
     });
 
-    // Auto-login si ya autenticado en la sesión
     window.addEventListener('DOMContentLoaded', () => {
       if (sessionStorage.getItem('velvet_auth') === 'true') {
         const lock = document.getElementById('lockScreen');
@@ -867,11 +1199,15 @@
 
     function lockApp() {
       sessionStorage.removeItem('velvet_auth');
-      document.getElementById('lockScreen').style.display = 'flex';
+      const lock = document.getElementById('lockScreen');
+      if (lock) {
+        lock.style.display = 'flex';
+        lock.style.opacity = '1';
+      }
       clearPin();
     }
 
-    // --- CARGA Y SINCRONIZACIÓN ---
+    // --- CARGA Y SINCRONIZACIÓN CON EL PROXY ---
     async function initApp() {
       lucide.createIcons();
       await refreshData();
@@ -884,89 +1220,129 @@
         const data = await res.json();
         if (data.ok) {
           allProducts = data.products || [];
+          allSuppliers = data.suppliers || [];
+          allPurchases = data.purchases || [];
           currentStore = data;
-          
-          document.getElementById('shopNameHeader').innerText = data.businessName || 'VelvetPOS';
-          renderProducts();
-          renderTodaySales(data.todaySummary || {});
+
+          if (data.businessName) {
+            const h = document.getElementById('shopNameHeader');
+            if (h) h.textContent = data.businessName;
+          }
+
           renderCategoryChips();
-          fetchPendingChanges();
+          renderProducts(allProducts);
+          renderSuppliers(allSuppliers);
+          renderPurchases(allPurchases);
+          renderTodaySales(data.todaySummary);
+          populateSupplierDropdown();
         }
+        await fetchPendingBadge();
       } catch (err) {
-        console.warn('Error cargando catálogo:', err);
+        console.warn('Error fetching cloud catalog:', err);
       }
     }
 
-    async function fetchPendingChanges() {
+    async function fetchPendingBadge() {
       try {
-        const res = await fetch('/api/sync/catalog?storeId=default');
-        const data = await res.json();
-        // Pendientes se actualizan en UI
-      } catch(e) {}
+        const res = await fetch('/api/sync/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeId: 'default' })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          const totalPending = (d.pendingChanges?.length || 0) + (d.pendingPurchases?.length || 0) + (d.pendingSuppliers?.length || 0);
+          const b = document.getElementById('pendingBadge');
+          if (b) b.textContent = totalPending;
+        }
+      } catch (e) {}
     }
 
-    // --- RENDERIZADO DE PRODUCTOS ---
-    function renderCategoryChips() {
-      const cats = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean)));
-      const container = document.getElementById('categoryChips');
-      container.innerHTML = `
-        <button class="filter-chip ${selectedCategory === 'ALL' ? 'active' : ''}" onclick="setCategoryFilter('ALL')">Todos</button>
-        <button class="filter-chip ${selectedCategory === 'LOW' ? 'active' : ''}" onclick="setCategoryFilter('LOW')">⚠️ Bajo Stock</button>
-        <button class="filter-chip ${selectedCategory === 'OUT' ? 'active' : ''}" onclick="setCategoryFilter('OUT')">🔴 Sin Stock</button>
-      `;
-      cats.forEach(c => {
-        container.innerHTML += `<button class="filter-chip ${selectedCategory === c ? 'active' : ''}" onclick="setCategoryFilter('${c}')">${c}</button>`;
+    // --- CAMBIO DE PESTAÑAS (TABS) ---
+    function switchTab(tab) {
+      const tabs = ['inventory', 'purchases', 'suppliers', 'sales'];
+      tabs.forEach(t => {
+        const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('navBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (view) view.style.display = (t === tab) ? 'block' : 'none';
+        if (btn) {
+          if (t === tab) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
       });
+      lucide.createIcons();
+    }
+
+    // --- MÓDULO 1: INVENTARIO ---
+    function renderCategoryChips() {
+      const container = document.getElementById('categoryChips');
+      if (!container) return;
+      const categories = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean)));
+      
+      let html = '<button class="filter-chip ' + (selectedCategory === 'ALL' ? 'active' : '') + '" onclick="setCategoryFilter(\'ALL\')">Todos (' + allProducts.length + ')</button>' +
+                 '<button class="filter-chip ' + (selectedCategory === 'LOW' ? 'active' : '') + '" onclick="setCategoryFilter(\'LOW\')">⚠️ Bajo Stock</button>' +
+                 '<button class="filter-chip ' + (selectedCategory === 'OUT' ? 'active' : '') + '" onclick="setCategoryFilter(\'OUT\')">🔴 Sin Stock</button>';
+
+      categories.forEach(c => {
+        html += '<button class="filter-chip ' + (selectedCategory === c ? 'active' : '') + '" onclick="setCategoryFilter(\'' + c.replace(/'/g, "\\'") + '\')">' + c + '</button>';
+      });
+
+      container.innerHTML = html;
     }
 
     function setCategoryFilter(cat) {
       selectedCategory = cat;
       renderCategoryChips();
-      renderProducts();
+      handleSearch();
     }
 
     function handleSearch() {
-      renderProducts();
-    }
+      const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+      let filtered = allProducts;
 
-    function renderProducts() {
-      const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
-      const listContainer = document.getElementById('productList');
+      if (selectedCategory === 'LOW') {
+        filtered = filtered.filter(p => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= (Number(p.minStock) || 3));
+      } else if (selectedCategory === 'OUT') {
+        filtered = filtered.filter(p => (Number(p.stock) || 0) <= 0);
+      } else if (selectedCategory !== 'ALL') {
+        filtered = filtered.filter(p => p.category === selectedCategory);
+      }
 
-      let filtered = allProducts.filter(p => {
-        const matchesQuery = !query || 
+      if (query) {
+        filtered = filtered.filter(p => 
           (p.name && p.name.toLowerCase().includes(query)) ||
           (p.sku && p.sku.toLowerCase().includes(query)) ||
-          (p.barcode && String(p.barcode).includes(query));
+          (p.barcode && p.barcode.toLowerCase().includes(query))
+        );
+      }
 
-        if (!matchesQuery) return false;
+      renderProducts(filtered);
+    }
 
-        if (selectedCategory === 'ALL') return true;
-        if (selectedCategory === 'LOW') return (p.stock || 0) <= (p.minStock || 3) && (p.stock || 0) > 0;
-        if (selectedCategory === 'OUT') return (p.stock || 0) <= 0;
-        return p.category === selectedCategory;
-      });
+    function renderProducts(list) {
+      const container = document.getElementById('productList');
+      if (!container) return;
 
-      if (filtered.length === 0) {
-        listContainer.innerHTML = `
-          <div style="text-align: center; padding: 3rem 1rem; color: var(--text-dim);">
-            <p>No se encontraron productos coincidentes.</p>
-          </div>
-        `;
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 3rem 1rem; color: var(--text-dim);">' +
+          '<i data-lucide="package-x" style="width: 42px; height: 42px; margin: 0 auto 0.5rem auto; opacity: 0.5;"></i>' +
+          '<p>No se encontraron productos.</p>' +
+        '</div>';
+        lucide.createIcons();
         return;
       }
 
-      listContainer.innerHTML = filtered.map(p => {
+      container.innerHTML = list.map(p => {
         const stock = Number(p.stock) || 0;
         const minStock = Number(p.minStock) || 3;
         let stockClass = 'stock-ok';
-        let stockLabel = `${stock} pzas`;
+        let stockLabel = stock + ' pzas';
         if (stock <= 0) {
           stockClass = 'stock-out';
           stockLabel = 'Agotado (0)';
         } else if (stock <= minStock) {
           stockClass = 'stock-low';
-          stockLabel = `Bajo (${stock})`;
+          stockLabel = 'Bajo (' + stock + ')';
         }
 
         const price = Number(p.price) || 0;
@@ -974,73 +1350,487 @@
         const wholesale = Number(p.wholesalePrice) || 0;
         const margin = price > 0 ? Math.round(((price - cost) / price) * 100) : 0;
 
-        return `
-          <div class="product-card glass" onclick="openAdjustModal(${p.id})">
-            <div class="prod-header">
-              <span class="prod-title">${p.name || 'Sin nombre'}</span>
-              <span class="badge-stock ${stockClass}">${stockLabel}</span>
-            </div>
-            <div class="prod-meta">
-              <span>SKU: <b style="color: white;">${p.sku || 'N/A'}</b></span>
-              <span>•</span>
-              <span>${p.category || 'GENERAL'}</span>
-              ${p.barcode ? `<span>• Barcode: ${p.barcode}</span>` : ''}
-            </div>
-            <div class="prod-prices-row">
-              <div class="price-col">
-                <span>Venta Menudeo</span>
-                <span>$${price.toFixed(2)}</span>
-              </div>
-              <div class="price-col">
-                <span>Mayoreo</span>
-                <span>$${wholesale > 0 ? wholesale.toFixed(2) : '---'}</span>
-              </div>
-              <div class="price-col">
-                <span>Costo Compra</span>
-                <span>$${cost.toFixed(2)}</span>
-              </div>
-              <div class="price-col">
-                <span>Margen</span>
-                <span style="color: #c084fc;">${margin}%</span>
-              </div>
-            </div>
-          </div>
-        `;
+        return '<div class="product-card glass" onclick="openAdjustModal(' + p.id + ')">' +
+          '<div class="prod-header">' +
+            '<span class="prod-title">' + (p.name || 'Sin nombre') + '</span>' +
+            '<span class="badge-stock ' + stockClass + '">' + stockLabel + '</span>' +
+          '</div>' +
+          '<div style="display: flex; gap: 0.5rem; font-size: 0.75rem; color: var(--text-dim);">' +
+            '<span>SKU: <b style="color: white;">' + (p.sku || 'N/A') + '</b></span>' +
+            '<span>•</span>' +
+            '<span>' + (p.category || 'GENERAL') + '</span>' +
+            (p.barcode ? '<span>• ' + p.barcode + '</span>' : '') +
+          '</div>' +
+          '<div class="prod-prices-row">' +
+            '<div class="price-col"><span>Menudeo</span><span>$' + price.toFixed(2) + '</span></div>' +
+            '<div class="price-col"><span>Mayoreo</span><span>$' + (wholesale > 0 ? wholesale.toFixed(2) : '---') + '</span></div>' +
+            '<div class="price-col"><span>Costo</span><span>$' + cost.toFixed(2) + '</span></div>' +
+            '<div class="price-col"><span>Margen</span><span style="color: #c084fc;">' + margin + '%</span></div>' +
+          '</div>' +
+        '</div>';
       }).join('');
 
       lucide.createIcons();
     }
 
-    function renderTodaySales(summary) {
-      document.getElementById('todayTotalSales').innerText = `$${(Number(summary.totalSales) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
-      document.getElementById('todayTicketsCount').innerText = summary.salesCount || 0;
-      document.getElementById('todayShift').innerText = summary.lastShift || '#1';
-      document.getElementById('todayCash').innerText = `$${(Number(summary.cash) || 0).toFixed(2)}`;
-      document.getElementById('todayCard').innerText = `$${(Number(summary.card) || 0).toFixed(2)}`;
-      document.getElementById('todayTransfer').innerText = `$${(Number(summary.transfer) || 0).toFixed(2)}`;
+    // --- MÓDULO 2: PROVEEDORES ---
+    function populateSupplierDropdown() {
+      const select = document.getElementById('purchaseSupplierSelect');
+      if (!select) return;
+      let html = '<option value="">Selecciona proveedor...</option>';
+      allSuppliers.forEach(s => {
+        html += '<option value="' + s.name.replace(/"/g, '&quot;') + '">' + s.name + (s.contactName ? ' (' + s.contactName + ')' : '') + '</option>';
+      });
+      select.innerHTML = html;
     }
 
-    // --- MODAL DE AJUSTE / SURTIDO ---
+    function handleSupplierSearch() {
+      const q = (document.getElementById('supplierSearchInput')?.value || '').toLowerCase().trim();
+      const filtered = allSuppliers.filter(s => 
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.contactName && s.contactName.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.includes(q))
+      );
+      renderSuppliers(filtered);
+    }
+
+    function renderSuppliers(list) {
+      const container = document.getElementById('suppliersList');
+      if (!container) return;
+
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-dim);">' +
+          '<i data-lucide="users" style="width: 36px; height: 36px; margin: 0 auto 0.5rem auto; opacity: 0.5;"></i>' +
+          '<p>No hay proveedores registrados todavía.</p>' +
+          '<button class="btn-gradient" style="margin-top: 0.75rem; padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="openSupplierModal()">Registrar Primer Proveedor</button>' +
+        '</div>';
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = list.map(s => {
+        const cleanPhone = (s.phone || '').replace(/[^0-9]/g, '');
+        const waUrl = cleanPhone ? 'https://wa.me/' + (cleanPhone.length === 10 ? '52' + cleanPhone : cleanPhone) : null;
+
+        return '<div class="supplier-card glass">' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+            '<div>' +
+              '<h3 style="font-family: var(--font-title); font-size: 1.05rem; font-weight: 800; color: white;">' + s.name + '</h3>' +
+              (s.contactName ? '<div style="font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.35rem; margin-top: 0.2rem;"><i data-lucide="user" style="width: 14px; height: 14px;"></i> ' + s.contactName + '</div>' : '') +
+            '</div>' +
+            '<button onclick="openSupplierModal(' + JSON.stringify(s).replace(/"/g, '&quot;') + ')" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.2rem;">' +
+              '<i data-lucide="edit-2" style="width: 16px; height: 16px;"></i>' +
+            '</button>' +
+          '</div>' +
+
+          (s.address ? '<div style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="map-pin" style="width: 13px; height: 13px;"></i> ' + s.address + '</div>' : '') +
+          (s.notes ? '<div style="font-size: 0.75rem; color: #be75e1; font-style: italic;">📌 ' + s.notes + '</div>' : '') +
+
+          '<div class="sup-actions-row">' +
+            (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="btn-pill btn-pill-call"><i data-lucide="phone" style="width: 13px; height: 13px;"></i> Llamar</a>' : '') +
+            (waUrl ? '<a href="' + waUrl + '" target="_blank" class="btn-pill btn-pill-wa"><i data-lucide="message-circle" style="width: 13px; height: 13px;"></i> WhatsApp</a>' : '') +
+            '<button class="btn-pill btn-pill-buy" onclick="openNewPurchaseModal(\'' + s.name.replace(/'/g, "\\'") + '\')"><i data-lucide="shopping-cart" style="width: 13px; height: 13px;"></i> Comprar</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function openSupplierModal(sup = null) {
+      document.getElementById('inputSupId').value = sup ? (sup.id || '') : '';
+      document.getElementById('inputSupName').value = sup ? (sup.name || '') : '';
+      document.getElementById('inputSupContact').value = sup ? (sup.contactName || '') : '';
+      document.getElementById('inputSupPhone').value = sup ? (sup.phone || '') : '';
+      document.getElementById('inputSupEmail').value = sup ? (sup.email || '') : '';
+      document.getElementById('inputSupAddress').value = sup ? (sup.address || '') : '';
+      document.getElementById('inputSupNotes').value = sup ? (sup.notes || '') : '';
+
+      document.getElementById('supplierModalTitle').textContent = sup ? 'Editar Proveedor' : 'Nuevo Proveedor';
+      document.getElementById('supplierModal').classList.add('open');
+    }
+
+    function closeSupplierModal() {
+      document.getElementById('supplierModal').classList.remove('open');
+    }
+
+    async function submitSupplier() {
+      const name = (document.getElementById('inputSupName').value || '').trim();
+      if (!name) {
+        alert('Por favor ingresa el nombre de la empresa o proveedor.');
+        return;
+      }
+
+      const supplierData = {
+        id: document.getElementById('inputSupId').value || undefined,
+        name,
+        contactName: (document.getElementById('inputSupContact').value || '').trim(),
+        phone: (document.getElementById('inputSupPhone').value || '').trim(),
+        email: (document.getElementById('inputSupEmail').value || '').trim(),
+        address: (document.getElementById('inputSupAddress').value || '').trim(),
+        notes: (document.getElementById('inputSupNotes').value || '').trim()
+      };
+
+      try {
+        const res = await fetch('/api/sync/supplier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeId: 'default', supplier: supplierData })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✅ Proveedor guardado con éxito');
+          closeSupplierModal();
+          refreshData();
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo guardar el proveedor.'));
+        }
+      } catch (e) {
+        alert('Error de conexión al guardar proveedor.');
+      }
+    }
+
+    // --- MÓDULO 3: COMPRAS Y FACTURAS ---
+    function renderPurchases(list) {
+      const container = document.getElementById('purchasesList');
+      if (!container) return;
+
+      const totalSum = (list || []).reduce((acc, p) => acc + (Number(p.total) || 0), 0);
+      const sumEl = document.getElementById('purchasesTotalSum');
+      const countEl = document.getElementById('purchasesCountLabel');
+      if (sumEl) sumEl.textContent = '$' + totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+      if (countEl) countEl.textContent = (list || []).length;
+
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-dim);">' +
+          '<i data-lucide="receipt" style="width: 36px; height: 36px; margin: 0 auto 0.5rem auto; opacity: 0.5;"></i>' +
+          '<p>No hay compras registradas en el historial.</p>' +
+          '<button class="btn-gradient" style="margin-top: 0.75rem; padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="openNewPurchaseModal()">Registrar Primera Compra</button>' +
+        '</div>';
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = list.map(p => {
+        const dateObj = new Date(p.date || Date.now());
+        const dateStr = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
+                        dateObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        const itemsCount = (p.items || []).length;
+        const totalPzas = (p.items || []).reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+
+        return '<div class="purchase-card glass" onclick="viewPurchaseDetailModal(' + JSON.stringify(p).replace(/"/g, '&quot;') + ')">' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+            '<div>' +
+              '<h3 style="font-family: var(--font-title); font-size: 1.05rem; font-weight: 800; color: white;">' + (p.supplier || 'Proveedor') + '</h3>' +
+              '<span style="font-size: 0.72rem; color: var(--text-muted);">' + dateStr + '</span>' +
+            '</div>' +
+            '<span style="background: rgba(157, 80, 187, 0.25); color: #e2bbfd; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid var(--accent);">' +
+              (p.folio ? 'Folio: ' + p.folio : 'Sin Folio') +
+            '</span>' +
+          '</div>' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 0.3rem;">' +
+            '<span style="font-size: 0.8rem; color: var(--text-dim);">' + itemsCount + ' artículos • <b>' + totalPzas + ' pzas</b></span>' +
+            '<span style="font-family: var(--font-title); font-size: 1.25rem; font-weight: 800; color: #4ade80;">$' + (Number(p.total) || 0).toFixed(2) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function viewPurchaseDetailModal(p) {
+      document.getElementById('detailPurchaseSupplier').textContent = p.supplier || 'Proveedor';
+      const d = new Date(p.date || Date.now());
+      document.getElementById('detailPurchaseDate').textContent = d.toLocaleString('es-MX');
+      document.getElementById('detailPurchaseFolio').textContent = p.folio || 'Sin Folio';
+      document.getElementById('detailPurchaseTotal').textContent = '$' + (Number(p.total) || 0).toFixed(2);
+
+      const itemsList = document.getElementById('detailPurchaseItemsList');
+      if (itemsList) {
+        itemsList.innerHTML = (p.items || []).map(it => {
+          const qty = Number(it.quantity) || 0;
+          const cost = Number(it.unitCost) || 0;
+          const sub = qty * cost;
+          return '<div style="background: rgba(0,0,0,0.3); padding: 0.65rem 0.85rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">' +
+            '<div>' +
+              '<div style="font-weight: 700; font-size: 0.9rem; color: white;">' + (it.name || 'Producto') + '</div>' +
+              '<div style="font-size: 0.75rem; color: var(--text-dim);">' + qty + ' pzas x $' + cost.toFixed(2) + '</div>' +
+            '</div>' +
+            '<div style="font-weight: 800; color: #4ade80; font-size: 0.95rem;">$' + sub.toFixed(2) + '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      document.getElementById('purchaseDetailModal').classList.add('open');
+    }
+
+    function closePurchaseDetailModal() {
+      document.getElementById('purchaseDetailModal').classList.remove('open');
+    }
+
+    // --- FORMULARIO NUEVA COMPRA (WIZARD) ---
+    function openNewPurchaseModal(preselectedSupplier = '') {
+      currentPurchaseCart = [];
+      populateSupplierDropdown();
+
+      const supSelect = document.getElementById('purchaseSupplierSelect');
+      if (supSelect && preselectedSupplier) {
+        supSelect.value = preselectedSupplier;
+      }
+      document.getElementById('purchaseFolioInput').value = '';
+      document.getElementById('purchaseSearchProduct').value = '';
+      document.getElementById('purchaseSearchResults').style.display = 'none';
+
+      renderPurchaseCart();
+      document.getElementById('newPurchaseModal').classList.add('open');
+    }
+
+    function closeNewPurchaseModal() {
+      document.getElementById('newPurchaseModal').classList.remove('open');
+    }
+
+    function handlePurchaseProductSearch() {
+      const q = (document.getElementById('purchaseSearchProduct')?.value || '').toLowerCase().trim();
+      const resContainer = document.getElementById('purchaseSearchResults');
+      if (!resContainer) return;
+
+      if (!q) {
+        resContainer.style.display = 'none';
+        return;
+      }
+
+      const matches = allProducts.filter(p => 
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q))
+      ).slice(0, 8);
+
+      if (matches.length === 0) {
+        resContainer.innerHTML = '<div style="padding: 0.85rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No se encontró ningún producto con ese nombre.</div>';
+        resContainer.style.display = 'block';
+        return;
+      }
+
+      resContainer.innerHTML = matches.map(p => {
+        return '<div style="padding: 0.65rem 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="addItemToPurchaseCart(' + p.id + ')">' +
+          '<div>' +
+            '<div style="font-weight: 700; font-size: 0.88rem; color: white;">' + p.name + '</div>' +
+            '<div style="font-size: 0.72rem; color: var(--text-dim);">SKU: ' + (p.sku || 'N/A') + ' • Stock: ' + (p.stock || 0) + '</div>' +
+          '</div>' +
+          '<div style="font-size: 0.82rem; font-weight: 700; color: #be75e1;">+ Agregar</div>' +
+        '</div>';
+      }).join('');
+
+      resContainer.style.display = 'block';
+    }
+
+    function addItemToPurchaseCart(productId) {
+      const p = allProducts.find(item => item.id === productId);
+      if (!p) return;
+
+      const existing = currentPurchaseCart.find(item => item.productId === productId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        currentPurchaseCart.push({
+          productId: p.id,
+          sku: p.sku || '',
+          name: p.name || 'Producto',
+          currentStock: Number(p.stock) || 0,
+          quantity: 1,
+          unitCost: Number(p.purchasePrice) || 0,
+          newPrice: Number(p.price) || 0,
+          newWholesalePrice: Number(p.wholesalePrice) || 0
+        });
+      }
+
+      document.getElementById('purchaseSearchProduct').value = '';
+      document.getElementById('purchaseSearchResults').style.display = 'none';
+      renderPurchaseCart();
+    }
+
+    function updateCartItem(index, field, value) {
+      if (!currentPurchaseCart[index]) return;
+      currentPurchaseCart[index][field] = Number(value) || 0;
+      renderPurchaseCart();
+    }
+
+    function changeCartItemQty(index, delta) {
+      if (!currentPurchaseCart[index]) return;
+      const newQty = currentPurchaseCart[index].quantity + delta;
+      if (newQty <= 0) {
+        removeCartItem(index);
+      } else {
+        currentPurchaseCart[index].quantity = newQty;
+        renderPurchaseCart();
+      }
+    }
+
+    function removeCartItem(index) {
+      currentPurchaseCart.splice(index, 1);
+      renderPurchaseCart();
+    }
+
+    function renderPurchaseCart() {
+      const container = document.getElementById('purchaseCartList');
+      const countEl = document.getElementById('purchaseItemsCount');
+      const unitsEl = document.getElementById('purchaseUnitsSum');
+      const grandTotalEl = document.getElementById('purchaseGrandTotal');
+
+      if (!container) return;
+
+      const totalItems = currentPurchaseCart.length;
+      const totalUnits = currentPurchaseCart.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+      const grandTotal = currentPurchaseCart.reduce((sum, it) => sum + ((Number(it.quantity) || 0) * (Number(it.unitCost) || 0)), 0);
+
+      if (countEl) countEl.textContent = totalItems;
+      if (unitsEl) unitsEl.textContent = totalUnits + ' pzas';
+      if (grandTotalEl) grandTotalEl.textContent = '$' + grandTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+
+      if (totalItems === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.85rem;">No has agregado productos. Busca arriba o escanea con la cámara.</div>';
+        return;
+      }
+
+      container.innerHTML = currentPurchaseCart.map((item, idx) => {
+        const subtotal = (item.quantity * item.unitCost);
+        const margin = item.newPrice > 0 ? Math.round(((item.newPrice - item.unitCost) / item.newPrice) * 100) : 0;
+
+        return '<div class="cart-item-row">' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+            '<div>' +
+              '<div style="font-weight: 700; font-size: 0.92rem; color: white;">' + item.name + '</div>' +
+              '<div style="font-size: 0.72rem; color: var(--text-dim);">SKU: ' + (item.sku || '---') + ' • Stock actual: ' + item.currentStock + ' pzas</div>' +
+            '</div>' +
+            '<button onclick="removeCartItem(' + idx + ')" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 0.2rem;">' +
+              '<i data-lucide="trash-2" style="width: 17px; height: 17px;"></i>' +
+            '</button>' +
+          '</div>' +
+
+          '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: center; margin-top: 0.2rem;">' +
+            '<div>' +
+              '<label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Piezas</label>' +
+              '<div class="cart-item-stepper">' +
+                '<button class="stepper-btn" onclick="changeCartItemQty(' + idx + ', -1)">-</button>' +
+                '<input type="number" value="' + item.quantity + '" min="1" onchange="updateCartItem(' + idx + ', \'quantity\', this.value)" style="width: 44px; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; text-align: center; border-radius: 6px; font-weight: 700;">' +
+                '<button class="stepper-btn" onclick="changeCartItemQty(' + idx + ', 1)">+</button>' +
+              '</div>' +
+            '</div>' +
+
+            '<div>' +
+              '<label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Costo Unit. ($)</label>' +
+              '<input type="number" step="0.01" value="' + item.unitCost + '" onchange="updateCartItem(' + idx + ', \'unitCost\', this.value)" style="width: 100%; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 0 0.5rem; font-weight: 700; font-size: 0.88rem;">' +
+            '</div>' +
+
+            '<div>' +
+              '<label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Precio Venta ($)</label>' +
+              '<input type="number" step="0.01" value="' + item.newPrice + '" onchange="updateCartItem(' + idx + ', \'newPrice\', this.value)" style="width: 100%; height: 32px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 0 0.5rem; font-weight: 700; font-size: 0.88rem;">' +
+            '</div>' +
+          '</div>' +
+
+          '<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.35rem; font-size: 0.78rem;">' +
+            '<span style="color: #c084fc; font-weight: 600;">Margen: ' + margin + '%</span>' +
+            '<span style="color: #4ade80; font-weight: 700;">Subtotal: $' + subtotal.toFixed(2) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    async function submitPurchase() {
+      const supplier = (document.getElementById('purchaseSupplierSelect').value || '').trim();
+      const folio = (document.getElementById('purchaseFolioInput').value || '').trim();
+
+      if (!supplier) {
+        alert('Por favor selecciona o escribe el nombre del proveedor.');
+        return;
+      }
+
+      if (currentPurchaseCart.length === 0) {
+        alert('Debes agregar al menos un producto a la compra.');
+        return;
+      }
+
+      const total = currentPurchaseCart.reduce((sum, it) => sum + (it.quantity * it.unitCost), 0);
+
+      const purchasePayload = {
+        date: new Date().toISOString(),
+        supplier,
+        folio,
+        subtotal: total,
+        iva: 0,
+        total: total,
+        status: 'active',
+        items: currentPurchaseCart.map(it => ({
+          productId: it.productId,
+          sku: it.sku,
+          name: it.name,
+          quantity: it.quantity,
+          unitCost: it.unitCost,
+          newPrice: it.newPrice,
+          newWholesalePrice: it.newWholesalePrice
+        }))
+      };
+
+      try {
+        const res = await fetch('/api/sync/purchase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeId: 'default', purchase: purchasePayload })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✅ Compra guardada y stock surtido');
+          closeNewPurchaseModal();
+          refreshData();
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo guardar la compra.'));
+        }
+      } catch (err) {
+        alert('Error de conexión al guardar la compra.');
+      }
+    }
+
+    // --- MÓDULO 4: CAJA HOY ---
+    function renderTodaySales(summary) {
+      if (!summary) return;
+      const fmt = n => '$' + (Number(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+      
+      const tot = document.getElementById('todayTotalSales');
+      const tck = document.getElementById('todayTicketsCount');
+      const shf = document.getElementById('todayShift');
+      const csh = document.getElementById('todayCash');
+      const crd = document.getElementById('todayCard');
+      const trf = document.getElementById('todayTransfer');
+
+      if (tot) tot.textContent = fmt(summary.totalSales);
+      if (tck) tck.textContent = summary.salesCount || 0;
+      if (shf) shf.textContent = summary.lastShift || '---';
+      if (csh) csh.textContent = fmt(summary.cash);
+      if (crd) crd.textContent = fmt(summary.card);
+      if (trf) trf.textContent = fmt(summary.transfer);
+    }
+
+    // --- MODAL: AJUSTE RÁPIDO INDIVIDUAL ---
     function openAdjustModal(productId) {
-      const prod = allProducts.find(p => p.id === productId);
-      if (!prod) return;
+      const p = allProducts.find(item => item.id === productId);
+      if (!p) return;
+      currentSelectedProduct = p;
 
-      currentSelectedProduct = prod;
-      document.getElementById('modalProdName').innerText = prod.name;
-      document.getElementById('modalProdSku').innerText = `SKU: ${prod.sku || 'N/A'}`;
-      document.getElementById('modalCurrentStock').innerText = `${prod.stock || 0} pzas`;
-      document.getElementById('modalCurrentCost').innerText = `$${(prod.purchasePrice || 0).toFixed(2)}`;
-      document.getElementById('modalCurrentPrice').innerText = `$${(prod.price || 0).toFixed(2)}`;
+      document.getElementById('modalProdName').textContent = p.name || 'Producto';
+      document.getElementById('modalProdSku').textContent = 'SKU: ' + (p.sku || 'N/A') + ' • Categoría: ' + (p.category || 'General');
+      document.getElementById('modalCurrentStock').textContent = (p.stock || 0) + ' pzas';
+      document.getElementById('modalCurrentCost').textContent = '$' + (Number(p.purchasePrice) || 0).toFixed(2);
+      document.getElementById('modalCurrentPrice').textContent = '$' + (Number(p.price) || 0).toFixed(2);
 
-      document.getElementById('inputStockAdd').value = '';
-      document.getElementById('inputPurchasePrice').value = prod.purchasePrice || '';
-      document.getElementById('inputPrice').value = prod.price || '';
-      document.getElementById('inputWholesalePrice').value = prod.wholesalePrice || '';
+      document.getElementById('inputStockAdded').value = '';
+      document.getElementById('inputNewCost').value = p.purchasePrice || '';
+      document.getElementById('inputNewPrice').value = p.price || '';
+      document.getElementById('inputNewWholesale').value = p.wholesalePrice || '';
       document.getElementById('inputNotes').value = '';
-      document.getElementById('previewNewStock').innerText = '';
 
       document.getElementById('adjustModal').classList.add('open');
-      lucide.createIcons();
     }
 
     function closeAdjustModal() {
@@ -1048,32 +1838,27 @@
       currentSelectedProduct = null;
     }
 
-    function calculatePreview() {
-      if (!currentSelectedProduct) return;
-      const addVal = parseInt(document.getElementById('inputStockAdd').value, 10);
-      const preview = document.getElementById('previewNewStock');
-      if (!isNaN(addVal) && addVal > 0) {
-        const current = Number(currentSelectedProduct.stock) || 0;
-        preview.innerText = `➡️ Nuevo stock resultante: ${current + addVal} pzas`;
-      } else {
-        preview.innerText = '';
-      }
-    }
+    function calculatePreview() {}
 
     async function submitAdjustment() {
       if (!currentSelectedProduct) return;
 
-      const addVal = parseInt(document.getElementById('inputStockAdd').value, 10);
-      const newCost = parseFloat(document.getElementById('inputPurchasePrice').value);
-      const newPrice = parseFloat(document.getElementById('inputPrice').value);
-      const newWholesale = parseFloat(document.getElementById('inputWholesalePrice').value);
+      const added = parseInt(document.getElementById('inputStockAdded').value);
+      const newCost = parseFloat(document.getElementById('inputNewCost').value);
+      const newPrice = parseFloat(document.getElementById('inputNewPrice').value);
+      const newWholesale = parseFloat(document.getElementById('inputNewWholesale').value);
       const notes = document.getElementById('inputNotes').value.trim() || 'Ajuste desde Velvet Móvil';
+
+      if (isNaN(added) && isNaN(newCost) && isNaN(newPrice) && isNaN(newWholesale)) {
+        alert('Ingresa al menos un cambio (piezas a surtir, costo o precio).');
+        return;
+      }
 
       const payload = {
         storeId: 'default',
         productId: currentSelectedProduct.id,
         sku: currentSelectedProduct.sku,
-        stockAdded: !isNaN(addVal) && addVal > 0 ? addVal : undefined,
+        stockAdded: !isNaN(added) ? added : undefined,
         newPurchasePrice: !isNaN(newCost) ? newCost : undefined,
         newPrice: !isNaN(newPrice) ? newPrice : undefined,
         newWholesalePrice: !isNaN(newWholesale) ? newWholesale : undefined,
@@ -1099,24 +1884,81 @@
       }
     }
 
-    // --- CAMARA SCANNER ---
-    function startCameraScanner() {
+    // --- MODAL: CAMBIOS EN COLA ---
+    async function openPendingChangesModal() {
+      try {
+        const res = await fetch('/api/sync/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeId: 'default' })
+        });
+        const d = await res.json();
+        const list = document.getElementById('pendingList');
+        if (!list) return;
+
+        const changes = d.pendingChanges || [];
+        const purchases = d.pendingPurchases || [];
+        const sups = d.pendingSuppliers || [];
+
+        const total = changes.length + purchases.length + sups.length;
+        if (total === 0) {
+          list.innerHTML = '<div style="text-align: center; padding: 2rem 1rem; color: var(--text-dim);">' +
+            '<i data-lucide="check-check" style="width: 36px; height: 36px; margin: 0 auto 0.5rem auto; color: #4ade80;"></i>' +
+            '<p>Todo está sincronizado con la tienda. No hay cambios pendientes.</p>' +
+          '</div>';
+        } else {
+          let html = '';
+          purchases.forEach(p => {
+            html += '<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.75rem; border-radius: 10px;">' +
+              '<div style="font-weight: 700; color: #4ade80;">🛒 Compra: ' + p.supplier + '</div>' +
+              '<div style="font-size: 0.75rem; color: var(--text-dim);">' + (p.items?.length || 0) + ' productos • Total: $' + (Number(p.total) || 0).toFixed(2) + '</div>' +
+            '</div>';
+          });
+          sups.forEach(s => {
+            html += '<div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.75rem; border-radius: 10px;">' +
+              '<div style="font-weight: 700; color: #38bdf8;">👥 Proveedor Nuevo: ' + s.name + '</div>' +
+              '<div style="font-size: 0.75rem; color: var(--text-dim);">' + (s.contactName || '') + ' ' + (s.phone || '') + '</div>' +
+            '</div>';
+          });
+          changes.forEach(c => {
+            html += '<div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 10px;">' +
+              '<div style="font-weight: 700; color: white;">' + c.productName + '</div>' +
+              '<div style="font-size: 0.75rem; color: var(--text-dim);">' +
+                (c.stockAdded ? '<b style="color: #4ade80;">+' + c.stockAdded + ' pzas</b> • ' : '') +
+                (c.newPrice ? 'Precio: $' + c.newPrice : '') +
+              '</div>' +
+            '</div>';
+          });
+          list.innerHTML = html;
+        }
+
+        document.getElementById('pendingModal').classList.add('open');
+        lucide.createIcons();
+      } catch (e) {
+        alert('No se pudieron consultar los cambios en cola.');
+      }
+    }
+
+    function closePendingModal() {
+      document.getElementById('pendingModal').classList.remove('open');
+    }
+
+    // --- ESCÁNER DE CÁMARA (HTML5-QRCODE) ---
+    function startCameraScanner(mode = 'inventory') {
+      cameraMode = mode;
       document.getElementById('scannerModal').classList.add('open');
       html5QrCode = new Html5Qrcode("reader");
+
       html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 180 } },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
           stopCameraScanner();
-          document.getElementById('searchInput').value = decodedText;
-          renderProducts();
-          showToast(`🔍 Escaneado: ${decodedText}`);
+          handleScannedBarcode(decodedText);
         },
-        (errorMessage) => {
-          // buscando código...
-        }
+        () => {}
       ).catch(err => {
-        alert('No se pudo acceder a la cámara: ' + err);
+        alert("No se pudo iniciar la cámara: " + err);
         stopCameraScanner();
       });
     }
@@ -1124,48 +1966,53 @@
     function stopCameraScanner() {
       if (html5QrCode) {
         html5QrCode.stop().then(() => {
-          document.getElementById('scannerModal').classList.remove('open');
-        }).catch(() => {
-          document.getElementById('scannerModal').classList.remove('open');
-        });
+          html5QrCode.clear();
+          html5QrCode = null;
+        }).catch(() => {});
+      }
+      document.getElementById('scannerModal').classList.remove('open');
+    }
+
+    function handleScannedBarcode(code) {
+      showToast("🔍 Código detectado: " + code);
+
+      if (cameraMode === 'purchase') {
+        const prod = allProducts.find(p => p.barcode === code || p.sku === code);
+        if (prod) {
+          addItemToPurchaseCart(prod.id);
+        } else {
+          document.getElementById('purchaseSearchProduct').value = code;
+          handlePurchaseProductSearch();
+        }
       } else {
-        document.getElementById('scannerModal').classList.remove('open');
+        const prod = allProducts.find(p => p.barcode === code || p.sku === code);
+        if (prod) {
+          openAdjustModal(prod.id);
+        } else {
+          const s = document.getElementById('searchInput');
+          if (s) {
+            s.value = code;
+            handleSearch();
+          }
+        }
       }
     }
 
-    // --- TOAST ---
+    // --- TOAST Y SERVICE WORKER ---
     function showToast(msg) {
-      const t = document.getElementById('toast');
-      document.getElementById('toastMsg').innerText = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
+      const toast = document.getElementById('toast');
+      const tMsg = document.getElementById('toastMsg');
+      if (tMsg) tMsg.textContent = msg;
+      if (toast) {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
     }
 
-    // --- NAVEGACIÓN ---
-    function switchTab(tab) {
-      document.getElementById('viewInventory').style.display = tab === 'inventory' ? 'block' : 'none';
-      document.getElementById('viewSales').style.display = tab === 'sales' ? 'block' : 'none';
-      document.getElementById('viewPending').style.display = tab === 'pending' ? 'block' : 'none';
-
-      document.getElementById('tabBtnInventory').classList.toggle('active', tab === 'inventory');
-      document.getElementById('tabBtnSales').classList.toggle('active', tab === 'sales');
-      document.getElementById('tabBtnPending').classList.toggle('active', tab === 'pending');
-      lucide.createIcons();
-    }
-
-    // --- SERVICE WORKER ---
     function registerServiceWorker() {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/movil/sw.js').catch(() => {});
       }
-    }
-
-    // Auto-login si la sesión está activa
-    if (sessionStorage.getItem('velvet_auth') === 'true') {
-      document.getElementById('lockScreen').style.display = 'none';
-      initApp();
-    } else {
-      lucide.createIcons();
     }
   </script>
 </body>

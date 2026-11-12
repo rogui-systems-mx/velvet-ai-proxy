@@ -1,4 +1,4 @@
-const CACHE_NAME = 'velvet-movil-v2';
+const CACHE_NAME = 'velvet-movil-v3';
 const ASSETS = [
   '/movil/',
   '/movil/index.html',
@@ -34,7 +34,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Actualiza caché en segundo plano
           if (response.status === 200) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));

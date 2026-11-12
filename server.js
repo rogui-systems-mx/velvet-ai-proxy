@@ -58,7 +58,7 @@ app.post('/api/telegram-webhook', async (req, res) => {
 
 
 // ============================================================================
-// CLOUD SYNC RELAY (Velvet Móvil / Inventario y Precios Remotos)
+// CLOUD SYNC RELAY (Velvet Móvil / Inventario, Compras y Proveedores Remotos)
 // ============================================================================
 const DATA_DIR = path.join(__dirname, 'data');
 const CLOUD_STORE_FILE = path.join(DATA_DIR, 'cloud_store.json');
@@ -86,10 +86,19 @@ function saveCloudStore(data) {
   }
 }
 
-// 1. Push desde VelvetPOS Desktop: Sube catálogo y resumen de ventas, y devuelve cambios pendientes
+// 1. Push desde VelvetPOS Desktop: Sube catálogo, proveedores, compras recientes y ventas
 app.post('/api/sync/push', (req, res) => {
   try {
-    const { storeId = 'default', businessName, machineId, products = [], todaySummary = {} } = req.body;
+    const {
+      storeId = 'default',
+      businessName,
+      machineId,
+      products = [],
+      suppliers = [],
+      recentPurchases = [],
+      todaySummary = {}
+    } = req.body;
+
     const store = loadCloudStore();
 
     if (!store.stores[storeId]) {
@@ -98,8 +107,12 @@ app.post('/api/sync/push', (req, res) => {
         machineId: machineId || '',
         lastSyncAt: new Date().toISOString(),
         products: [],
+        suppliers: [],
+        purchases: [],
         todaySummary: {},
-        pendingChanges: []
+        pendingChanges: [],
+        pendingPurchases: [],
+        pendingSuppliers: []
       };
     }
 
@@ -109,15 +122,29 @@ app.post('/api/sync/push', (req, res) => {
     currentStore.lastSyncAt = new Date().toISOString();
     currentStore.todaySummary = todaySummary || currentStore.todaySummary;
     currentStore.products = products;
+    if (Array.isArray(suppliers) && suppliers.length > 0) {
+      currentStore.suppliers = suppliers;
+    }
+    if (Array.isArray(recentPurchases) && recentPurchases.length > 0) {
+      // Combinar compras existentes respetando las más recientes
+      currentStore.purchases = recentPurchases;
+    }
+
+    if (!currentStore.pendingChanges) currentStore.pendingChanges = [];
+    if (!currentStore.pendingPurchases) currentStore.pendingPurchases = [];
+    if (!currentStore.pendingSuppliers) currentStore.pendingSuppliers = [];
 
     saveCloudStore(store);
 
-    const pending = currentStore.pendingChanges || [];
     res.json({
       ok: true,
       lastSyncAt: currentStore.lastSyncAt,
       totalProducts: products.length,
-      pendingChanges: pending
+      totalSuppliers: (currentStore.suppliers || []).length,
+      totalPurchases: (currentStore.purchases || []).length,
+      pendingChanges: currentStore.pendingChanges,
+      pendingPurchases: currentStore.pendingPurchases,
+      pendingSuppliers: currentStore.pendingSuppliers
     });
   } catch (err) {
     console.error('Error in /api/sync/push:', err);
@@ -125,7 +152,7 @@ app.post('/api/sync/push', (req, res) => {
   }
 });
 
-// 2. Consulta desde la PWA Móvil: Obtiene catálogo, existencias y resumen del día
+// 2. Consulta desde la PWA Móvil: Obtiene catálogo, proveedores, compras e ingresos
 app.get('/api/sync/catalog', (req, res) => {
   try {
     const storeId = req.query.storeId || 'default';
@@ -139,7 +166,9 @@ app.get('/api/sync/catalog', (req, res) => {
         lastSyncAt: null,
         totalProducts: 0,
         todaySummary: { totalSales: 0, salesCount: 0 },
-        products: []
+        products: [],
+        suppliers: [],
+        purchases: []
       });
     }
 
@@ -149,7 +178,9 @@ app.get('/api/sync/catalog', (req, res) => {
       lastSyncAt: currentStore.lastSyncAt,
       totalProducts: (currentStore.products || []).length,
       todaySummary: currentStore.todaySummary || {},
-      products: currentStore.products || []
+      products: currentStore.products || [],
+      suppliers: currentStore.suppliers || [],
+      purchases: currentStore.purchases || []
     });
   } catch (err) {
     console.error('Error in /api/sync/catalog:', err);
@@ -157,7 +188,7 @@ app.get('/api/sync/catalog', (req, res) => {
   }
 });
 
-// 3. Ajuste desde la PWA Móvil: Registrar compra, entrada de stock o cambio de precio
+// 3. Ajuste rápido desde PWA Móvil (Añadir stock rápido o cambio de precio)
 app.post('/api/sync/adjust', async (req, res) => {
   try {
     const {
@@ -174,13 +205,12 @@ app.post('/api/sync/adjust', async (req, res) => {
 
     const store = loadCloudStore();
     if (!store.stores[storeId]) {
-      return res.status(404).json({ ok: false, error: 'Tienda no encontrada en la nube. Primero conecta VelvetPOS Desktop.' });
+      return res.status(404).json({ ok: false, error: 'Tienda no conectada en la nube. Abre VelvetPOS Desktop primero.' });
     }
 
     const currentStore = store.stores[storeId];
     if (!currentStore.pendingChanges) currentStore.pendingChanges = [];
 
-    // Localizar producto en el catálogo en nube
     const prod = (currentStore.products || []).find(p => (productId && p.id === productId) || (sku && p.sku === sku));
 
     let finalNewStock = newStock;
@@ -225,20 +255,153 @@ app.post('/api/sync/adjust', async (req, res) => {
   }
 });
 
-// 4. Confirmación desde VelvetPOS Desktop: Notifica que los cambios ya se aplicaron en la PC
+// 4. Registrar COMPRA completa desde Velvet Móvil
+app.post('/api/sync/purchase', (req, res) => {
+  try {
+    const { storeId = 'default', purchase } = req.body;
+    if (!purchase || !purchase.supplier || !Array.isArray(purchase.items) || purchase.items.length === 0) {
+      return res.status(400).json({ ok: false, error: 'Datos de compra incompletos. Se requiere proveedor y al menos un producto.' });
+    }
+
+    const store = loadCloudStore();
+    if (!store.stores[storeId]) {
+      return res.status(404).json({ ok: false, error: 'Tienda no inicializada en la nube.' });
+    }
+
+    const currentStore = store.stores[storeId];
+    if (!currentStore.pendingPurchases) currentStore.pendingPurchases = [];
+    if (!currentStore.purchases) currentStore.purchases = [];
+
+    const purchaseId = purchase.id || `pur_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const finalPurchase = {
+      ...purchase,
+      id: purchaseId,
+      date: purchase.date || new Date().toISOString(),
+      status: 'active'
+    };
+
+    // Actualizar existencias y costos en el catálogo en nube de inmediato para reflejarlo en la PWA
+    for (const item of finalPurchase.items) {
+      const prod = (currentStore.products || []).find(p => (item.productId && p.id === item.productId) || (item.sku && p.sku === item.sku));
+      if (prod) {
+        prod.stock = (Number(prod.stock) || 0) + (Number(item.quantity) || 0);
+        if (typeof item.unitCost === 'number' && item.unitCost > 0) {
+          prod.purchasePrice = item.unitCost;
+        }
+        if (typeof item.newPrice === 'number' && item.newPrice > 0) {
+          prod.price = item.newPrice;
+        }
+        if (typeof item.newWholesalePrice === 'number' && item.newWholesalePrice > 0) {
+          prod.wholesalePrice = item.newWholesalePrice;
+        }
+      }
+    }
+
+    // Agregar compra al historial de compras
+    currentStore.purchases.unshift(finalPurchase);
+    // Limitar historial en nube a 50 compras recientes
+    if (currentStore.purchases.length > 50) {
+      currentStore.purchases = currentStore.purchases.slice(0, 50);
+    }
+
+    // Encolar para descarga en VelvetPOS Desktop
+    currentStore.pendingPurchases.push(finalPurchase);
+    saveCloudStore(store);
+
+    res.json({
+      ok: true,
+      message: 'Compra registrada con éxito y encolada para sincronizar con VelvetPOS Desktop.',
+      purchase: finalPurchase
+    });
+  } catch (err) {
+    console.error('Error in /api/sync/purchase:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// 5. Registrar o Actualizar PROVEEDOR desde Velvet Móvil
+app.post('/api/sync/supplier', (req, res) => {
+  try {
+    const { storeId = 'default', supplier } = req.body;
+    if (!supplier || !supplier.name) {
+      return res.status(400).json({ ok: false, error: 'El nombre del proveedor es obligatorio.' });
+    }
+
+    const store = loadCloudStore();
+    if (!store.stores[storeId]) {
+      return res.status(404).json({ ok: false, error: 'Tienda no inicializada en la nube.' });
+    }
+
+    const currentStore = store.stores[storeId];
+    if (!currentStore.suppliers) currentStore.suppliers = [];
+    if (!currentStore.pendingSuppliers) currentStore.pendingSuppliers = [];
+
+    const supId = supplier.id || `sup_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const finalSupplier = {
+      ...supplier,
+      id: supId
+    };
+
+    // Actualizar en memoria
+    const existingIndex = currentStore.suppliers.findIndex(s => 
+      (s.id && s.id === finalSupplier.id) || (s.name.trim().toLowerCase() === finalSupplier.name.trim().toLowerCase())
+    );
+
+    if (existingIndex >= 0) {
+      currentStore.suppliers[existingIndex] = { ...currentStore.suppliers[existingIndex], ...finalSupplier };
+    } else {
+      currentStore.suppliers.push(finalSupplier);
+    }
+
+    currentStore.pendingSuppliers.push(finalSupplier);
+    saveCloudStore(store);
+
+    res.json({
+      ok: true,
+      message: 'Proveedor guardado con éxito.',
+      supplier: finalSupplier
+    });
+  } catch (err) {
+    console.error('Error in /api/sync/supplier:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// 6. Confirmación (ACK) desde VelvetPOS Desktop: Vacía las colas de compras, proveedores y cambios aplicados
 app.post('/api/sync/ack', (req, res) => {
   try {
-    const { storeId = 'default', appliedChangeIds = [] } = req.body;
+    const {
+      storeId = 'default',
+      appliedChangeIds = [],
+      appliedPurchaseIds = [],
+      appliedSupplierIds = []
+    } = req.body;
+
     const store = loadCloudStore();
     const currentStore = store.stores[storeId];
 
-    if (currentStore && Array.isArray(currentStore.pendingChanges)) {
-      const idsSet = new Set(appliedChangeIds);
-      currentStore.pendingChanges = currentStore.pendingChanges.filter(ch => !idsSet.has(ch.id));
+    if (currentStore) {
+      if (Array.isArray(appliedChangeIds) && appliedChangeIds.length > 0) {
+        const changeSet = new Set(appliedChangeIds);
+        currentStore.pendingChanges = (currentStore.pendingChanges || []).filter(ch => !changeSet.has(ch.id));
+      }
+      if (Array.isArray(appliedPurchaseIds) && appliedPurchaseIds.length > 0) {
+        const purSet = new Set(appliedPurchaseIds);
+        currentStore.pendingPurchases = (currentStore.pendingPurchases || []).filter(p => !purSet.has(p.id));
+      }
+      if (Array.isArray(appliedSupplierIds) && appliedSupplierIds.length > 0) {
+        const supSet = new Set(appliedSupplierIds);
+        currentStore.pendingSuppliers = (currentStore.pendingSuppliers || []).filter(s => !supSet.has(s.id));
+      }
       saveCloudStore(store);
     }
 
-    res.json({ ok: true, remainingPending: currentStore ? (currentStore.pendingChanges || []).length : 0 });
+    res.json({
+      ok: true,
+      remainingPendingChanges: currentStore ? (currentStore.pendingChanges || []).length : 0,
+      remainingPendingPurchases: currentStore ? (currentStore.pendingPurchases || []).length : 0,
+      remainingPendingSuppliers: currentStore ? (currentStore.pendingSuppliers || []).length : 0
+    });
   } catch (err) {
     console.error('Error in /api/sync/ack:', err);
     res.status(500).json({ ok: false, error: err.message });
