@@ -606,21 +606,25 @@
       max-width: 450px;
     }
 
-    /* TOAST */
+    /* TOAST ELEGANTE (SUPERIOR FLOTANTE) */
     #toast {
       position: fixed;
-      bottom: 5rem;
+      top: 1rem;
       left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #22c55e;
+      transform: translateX(-50%) translateY(-120px);
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(16, 185, 129, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       color: white;
-      padding: 0.75rem 1.5rem;
+      padding: 0.65rem 1.4rem;
       border-radius: 100px;
       font-weight: 700;
-      font-size: 0.9rem;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      font-size: 0.88rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.4);
       z-index: 999;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -628,6 +632,8 @@
 
     #toast.show {
       transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
